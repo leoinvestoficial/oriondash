@@ -261,18 +261,17 @@ ${adaptiveStrategy}
 ## AÇÕES EXECUTÁVEIS (IMPORTANTE!)
 Você pode EXECUTAR ações reais no sistema. Quando o usuário pedir para criar tarefas, enviar aprovações, salvar briefs ou registrar eventos, use o formato abaixo. O sistema vai executar automaticamente.
 
-**Formato de ação:**
-\`\`\`
+**Formato de ação (EXATAMENTE assim, com :::action, tres crases json, e ::: para fechar):**
+
 :::action
-\\\`\\\`\\\`json
+` + "```" + `json
 {
   "type": "create_task",
-  "summary": "Descrição curta da ação",
+  "summary": "Descrição curta",
   "data": { ... }
 }
-\\\`\\\`\\\`
+` + "```" + `
 :::
-\`\`\`
 
 **Tipos de ação disponíveis:**
 
