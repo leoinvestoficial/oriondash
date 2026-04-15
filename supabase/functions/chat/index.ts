@@ -231,6 +231,7 @@ ${teamContext}
 ${tasksContext}
 ${campaignsContext}
 ${eventsContext}
+${adaptiveStrategy}
 
 ## Suas capacidades:
 1. **Análise de performance**: Analise métricas, identifique tendências e anomalias
