@@ -116,7 +116,7 @@ Onboarding completo: ${dna.onboarding_completed ? "Sim" : "Não"}
           }
 
           // Adaptive strategy instructions based on context
-          let adaptiveStrategy = "\n## ESTRATÉGIA ADAPTATIVA (USE SEMPRE)\n";
+          adaptiveStrategy = "\n## ESTRATÉGIA ADAPTATIVA (USE SEMPRE)\n";
           if (stage === "pre_launch") {
             adaptiveStrategy += `A empresa está em PRÉ-LANÇAMENTO. Priorize:
 - Conteúdo orgânico e community building
