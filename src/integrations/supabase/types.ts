@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      approvals: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          impact: string
+          level: string
+          reasoning: string
+          resolved_at: string | null
+          status: string
+          supporting_data: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          impact: string
+          level?: string
+          reasoning: string
+          resolved_at?: string | null
+          status?: string
+          supporting_data?: Json
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          impact?: string
+          level?: string
+          reasoning?: string
+          resolved_at?: string | null
+          status?: string
+          supporting_data?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_history: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       company_dna: {
         Row: {
           company_name: string | null
