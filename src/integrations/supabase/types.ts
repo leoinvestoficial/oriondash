@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      company_dna: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          dna_data: Json
+          id: string
+          onboarding_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          dna_data?: Json
+          id?: string
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          dna_data?: Json
+          id?: string
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          company_dna_id: string
+          created_at: string
+          department: string | null
+          email: string
+          id: string
+          name: string
+          responsibilities: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_dna_id: string
+          created_at?: string
+          department?: string | null
+          email: string
+          id?: string
+          name: string
+          responsibilities?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_dna_id?: string
+          created_at?: string
+          department?: string | null
+          email?: string
+          id?: string
+          name?: string
+          responsibilities?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_company_dna_id_fkey"
+            columns: ["company_dna_id"]
+            isOneToOne: false
+            referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
