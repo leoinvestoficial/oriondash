@@ -1,0 +1,2 @@
+CREATE POLICY "Users update own metrics" ON public.campaign_metrics FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users delete own metrics" ON public.campaign_metrics FOR DELETE TO authenticated USING (auth.uid() = user_id);

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Link2, Unlink, ExternalLink, Sparkles, Shield } from "lucide-react";
+import { Link2, Unlink, Sparkles, Shield, RefreshCw, Loader2 } from "lucide-react";
 
 interface Integration {
   id: string;
@@ -13,6 +13,7 @@ interface Integration {
   account_name: string | null;
   account_id: string | null;
   status: string;
+  updated_at: string;
 }
 
 const PLATFORMS = [
@@ -50,6 +51,8 @@ const Integrations = () => {
   const { user } = useAuth();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   const fetchIntegrations = async () => {
     if (!user) return;
@@ -66,17 +69,61 @@ const Integrations = () => {
   const getIntegration = (platform: string) => integrations.find(i => i.platform === platform);
 
   const handleConnect = async (platform: string) => {
-    // For now, show that this requires API credentials
-    toast.info("Em breve! A conexão com " + PLATFORMS.find(p => p.id === platform)?.name + " será disponibilizada na próxima atualização.", {
-      description: "O Orion vai precisar das credenciais da API para sincronizar seus dados.",
-      duration: 5000,
-    });
+    if (platform === "google_analytics") {
+      toast.info("Google Analytics será disponibilizado em breve!", { duration: 3000 });
+      return;
+    }
+
+    setConnecting(platform);
+    try {
+      const redirectUri = `${window.location.origin}/oauth/callback`;
+      
+      const { data, error } = await supabase.functions.invoke("oauth-initiate", {
+        body: { platform, redirectUri },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Redirect to OAuth provider
+        window.location.href = data.url;
+      } else if (data?.error) {
+        toast.error(data.error);
+      }
+    } catch (err: any) {
+      console.error("Connect error:", err);
+      toast.error(err.message || "Erro ao iniciar conexão");
+    } finally {
+      setConnecting(null);
+    }
   };
 
   const handleDisconnect = async (id: string) => {
-    const { error } = await supabase.from("ad_integrations").update({ status: "disconnected" }).eq("id", id);
-    if (error) toast.error("Erro ao desconectar"); else { toast.success("Desconectado"); fetchIntegrations(); }
+    const { error } = await supabase
+      .from("ad_integrations")
+      .update({ status: "disconnected", access_token: null, refresh_token: null })
+      .eq("id", id);
+    if (error) toast.error("Erro ao desconectar");
+    else { toast.success("Desconectado"); fetchIntegrations(); }
   };
+
+  const handleSyncAll = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-metrics", {
+        body: {},
+      });
+      if (error) throw error;
+      toast.success("Métricas sincronizadas!");
+      console.log("Sync results:", data);
+    } catch (err: any) {
+      toast.error("Erro ao sincronizar: " + (err.message || ""));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const hasConnected = integrations.some(i => i.status === "connected");
 
   if (loading) {
     return <AppLayout><div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 rounded-lg orion-gradient animate-pulse-glow" /></div></AppLayout>;
@@ -85,11 +132,25 @@ const Integrations = () => {
   return (
     <AppLayout>
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-display text-foreground">Integrações</h1>
-          <p className="text-sm text-muted-foreground">
-            Conecte suas plataformas de Ads para o Orion analisar métricas reais e otimizar campanhas
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-display text-foreground">Integrações</h1>
+            <p className="text-sm text-muted-foreground">
+              Conecte suas plataformas de Ads para o Orion analisar métricas reais e otimizar campanhas
+            </p>
+          </div>
+          {hasConnected && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncAll}
+              disabled={syncing}
+              className="gap-2"
+            >
+              {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Sincronizar métricas
+            </Button>
+          )}
         </div>
 
         {/* Info banner */}
@@ -98,7 +159,8 @@ const Integrations = () => {
           <div>
             <p className="text-sm text-foreground font-medium mb-1">Como funciona</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Ao conectar suas plataformas, o Orion sincroniza campanhas e métricas automaticamente. Ele analisa performance, identifica oportunidades e sugere otimizações — tudo baseado nos seus dados reais combinados com o Company DNA.
+              Ao conectar suas plataformas, o Orion sincroniza campanhas e métricas automaticamente via OAuth seguro. 
+              Cada cliente conecta sua própria conta — o Orion nunca tem acesso a credenciais de outros clientes.
             </p>
           </div>
         </div>
@@ -108,10 +170,13 @@ const Integrations = () => {
           {PLATFORMS.map((platform) => {
             const integration = getIntegration(platform.id);
             const isConnected = integration?.status === "connected";
+            const isExpired = integration?.status === "expired";
+            const isConnecting = connecting === platform.id;
+
             return (
               <div key={platform.id} className={cn(
                 "bg-card border rounded-xl p-5 space-y-4 transition-colors",
-                isConnected ? "border-orion-success/30" : "border-border"
+                isConnected ? "border-orion-success/30" : isExpired ? "border-orion-warning/30" : "border-border"
               )}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -121,10 +186,15 @@ const Integrations = () => {
                       {isConnected && integration?.account_name && (
                         <p className="text-[10px] text-orion-success">✓ {integration.account_name}</p>
                       )}
+                      {isExpired && (
+                        <p className="text-[10px] text-orion-warning">⚠ Token expirado — reconecte</p>
+                      )}
                     </div>
                   </div>
                   {isConnected ? (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-orion-success/15 text-orion-success">Conectado</span>
+                  ) : isExpired ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-orion-warning/15 text-orion-warning">Expirado</span>
                   ) : (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Desconectado</span>
                   )}
@@ -141,6 +211,12 @@ const Integrations = () => {
                   ))}
                 </ul>
 
+                {integration?.status === "connected" && integration.updated_at && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Última sync: {new Date(integration.updated_at).toLocaleString("pt-BR")}
+                  </p>
+                )}
+
                 <div className="pt-2">
                   {isConnected ? (
                     <Button variant="outline" size="sm" onClick={() => handleDisconnect(integration!.id)}
@@ -149,8 +225,10 @@ const Integrations = () => {
                     </Button>
                   ) : (
                     <Button size="sm" onClick={() => handleConnect(platform.id)}
+                      disabled={isConnecting}
                       className="orion-gradient text-primary-foreground gap-2 w-full">
-                      <Link2 className="w-3.5 h-3.5" /> Conectar
+                      {isConnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
+                      {isExpired ? "Reconectar" : "Conectar"}
                     </Button>
                   )}
                 </div>
@@ -162,7 +240,7 @@ const Integrations = () => {
         {/* Security note */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Shield className="w-3.5 h-3.5" />
-          <span>Todos os tokens de acesso são criptografados e armazenados de forma segura. O Orion só lê dados — nunca altera campanhas sem sua aprovação.</span>
+          <span>OAuth seguro — cada cliente conecta sua própria conta. Tokens criptografados. O Orion só lê dados — nunca altera campanhas sem aprovação.</span>
         </div>
       </div>
     </AppLayout>
