@@ -11,6 +11,8 @@ import {
   Brain,
   Bell,
   LogOut,
+  Users,
+  ListTodo,
 } from "lucide-react";
 
 const NAV_ITEMS = [

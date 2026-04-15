@@ -9,6 +9,8 @@ import Approvals from "./pages/Approvals";
 import Studio from "./pages/Studio";
 import Chat from "./pages/Chat";
 import Onboarding from "./pages/Onboarding";
+import Team from "./pages/Team";
+import Tasks from "./pages/Tasks";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +43,8 @@ const AppRoutes = () => (
     <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
     <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
     <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+    <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
+    <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

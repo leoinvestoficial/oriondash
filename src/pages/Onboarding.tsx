@@ -5,6 +5,7 @@ import { OnboardingSidebar } from "@/components/onboarding/OnboardingSidebar";
 import { OnboardingStepView } from "@/components/onboarding/OnboardingStepView";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingComplete } from "@/components/onboarding/OnboardingComplete";
+import { BrandAssetsStep } from "@/components/onboarding/BrandAssetsStep";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 
 const Onboarding = () => {
@@ -14,15 +15,21 @@ const Onboarding = () => {
   const [formData, setFormData] = useState<Record<string, Record<string, string>>>({});
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
 
-  // Load existing DNA data
   useEffect(() => {
     if (dna?.dna_data && Object.keys(dna.dna_data).length > 0) {
       setFormData(dna.dna_data);
       const completed = new Set<string>();
       ONBOARDING_STEPS.forEach((step) => {
-        const blockData = dna.dna_data[step.block];
-        if (blockData && Object.values(blockData).some((v) => v?.trim())) {
-          completed.add(step.id);
+        if (step.isCustom) {
+          const blockData = dna.dna_data[step.block];
+          if (blockData && Object.values(blockData).some((v) => v?.trim())) {
+            completed.add(step.id);
+          }
+        } else {
+          const blockData = dna.dna_data[step.block];
+          if (blockData && Object.values(blockData).some((v) => v?.trim())) {
+            completed.add(step.id);
+          }
         }
       });
       setCompletedSteps(completed);
@@ -46,8 +53,6 @@ const Onboarding = () => {
     }
     const nextStep = currentStep + 1;
     setCurrentStep(nextStep);
-
-    // Auto-save on each step
     await saveDNA(formData, nextStep >= ONBOARDING_STEPS.length);
   };
 
@@ -83,7 +88,15 @@ const Onboarding = () => {
       <div className="flex-1 flex items-center justify-center p-8">
         {isWelcome && <OnboardingWelcome onStart={handleStart} />}
         {isComplete && <OnboardingComplete data={formData} />}
-        {step && (
+        {step && step.isCustom && step.id === "brandAssets" && (
+          <BrandAssetsStep
+            data={getStepData(step.block)}
+            onUpdate={(key, value) => updateField(step.block, key, value)}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
+        {step && !step.isCustom && (
           <OnboardingStepView
             step={step}
             data={getStepData(step.block)}
