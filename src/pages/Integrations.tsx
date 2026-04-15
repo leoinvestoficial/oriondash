@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Link2, Unlink, Sparkles, Shield, RefreshCw, Loader2 } from "lucide-react";
+import { Link2, Unlink, Sparkles, Shield, RefreshCw, Loader2, Settings } from "lucide-react";
+import { CredentialsDialog } from "@/components/integrations/CredentialsDialog";
 
 interface Integration {
   id: string;
@@ -53,6 +54,8 @@ const Integrations = () => {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [credentialsDialog, setCredentialsDialog] = useState<{ open: boolean; platform: string; name: string }>({ open: false, platform: "", name: "" });
+  const [savedCredentials, setSavedCredentials] = useState<Set<string>>(new Set());
 
   const fetchIntegrations = async () => {
     if (!user) return;
@@ -64,13 +67,34 @@ const Integrations = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchIntegrations(); }, [user]);
+  const fetchCredentials = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("oauth_credentials" as any)
+      .select("platform")
+      .eq("user_id", user.id);
+    if (data) {
+      setSavedCredentials(new Set((data as any[]).map((d: any) => d.platform)));
+    }
+  };
+
+  useEffect(() => {
+    fetchIntegrations();
+    fetchCredentials();
+  }, [user]);
 
   const getIntegration = (platform: string) => integrations.find(i => i.platform === platform);
 
   const handleConnect = async (platform: string) => {
     if (platform === "google_analytics") {
       toast.info("Google Analytics será disponibilizado em breve!", { duration: 3000 });
+      return;
+    }
+
+    // Check if credentials are saved first
+    if (!savedCredentials.has(platform)) {
+      const p = PLATFORMS.find(pl => pl.id === platform);
+      setCredentialsDialog({ open: true, platform, name: p?.name || platform });
       return;
     }
 
@@ -85,7 +109,6 @@ const Integrations = () => {
       if (error) throw error;
 
       if (data?.url) {
-        // Redirect to OAuth provider
         window.location.href = data.url;
       } else if (data?.error) {
         toast.error(data.error);
@@ -110,17 +133,22 @@ const Integrations = () => {
   const handleSyncAll = async () => {
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-metrics", {
-        body: {},
-      });
+      const { data, error } = await supabase.functions.invoke("sync-metrics", { body: {} });
       if (error) throw error;
       toast.success("Métricas sincronizadas!");
-      console.log("Sync results:", data);
     } catch (err: any) {
       toast.error("Erro ao sincronizar: " + (err.message || ""));
     } finally {
       setSyncing(false);
     }
+  };
+
+  const handleCredentialsSaved = () => {
+    fetchCredentials();
+    // Auto-trigger connect after saving credentials
+    setTimeout(() => {
+      handleConnect(credentialsDialog.platform);
+    }, 500);
   };
 
   const hasConnected = integrations.some(i => i.status === "connected");
@@ -140,38 +168,32 @@ const Integrations = () => {
             </p>
           </div>
           {hasConnected && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncAll}
-              disabled={syncing}
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={handleSyncAll} disabled={syncing} className="gap-2">
               {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Sincronizar métricas
             </Button>
           )}
         </div>
 
-        {/* Info banner */}
         <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-start gap-3">
           <Sparkles className="w-5 h-5 text-orion-violet-light shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-foreground font-medium mb-1">Como funciona</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Ao conectar suas plataformas, o Orion sincroniza campanhas e métricas automaticamente via OAuth seguro. 
-              Cada cliente conecta sua própria conta — o Orion nunca tem acesso a credenciais de outros clientes.
+              1. Configure as credenciais do seu app OAuth (App ID e Secret de cada plataforma).<br />
+              2. Clique em Conectar — você será redirecionado para autorizar o acesso.<br />
+              3. O Orion sincroniza campanhas e métricas automaticamente.
             </p>
           </div>
         </div>
 
-        {/* Platforms grid */}
         <div className="grid grid-cols-2 gap-4">
           {PLATFORMS.map((platform) => {
             const integration = getIntegration(platform.id);
             const isConnected = integration?.status === "connected";
             const isExpired = integration?.status === "expired";
             const isConnecting = connecting === platform.id;
+            const hasCredentials = savedCredentials.has(platform.id);
 
             return (
               <div key={platform.id} className={cn(
@@ -188,6 +210,9 @@ const Integrations = () => {
                       )}
                       {isExpired && (
                         <p className="text-[10px] text-orion-warning">⚠ Token expirado — reconecte</p>
+                      )}
+                      {!isConnected && !isExpired && hasCredentials && (
+                        <p className="text-[10px] text-primary">✓ Credenciais configuradas</p>
                       )}
                     </div>
                   </div>
@@ -217,7 +242,19 @@ const Integrations = () => {
                   </p>
                 )}
 
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
+                  {platform.id !== "google_analytics" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCredentialsDialog({ open: true, platform: platform.id, name: platform.name })}
+                      className="text-muted-foreground gap-2 w-full text-xs h-8"
+                    >
+                      <Settings className="w-3 h-3" />
+                      {hasCredentials ? "Editar credenciais" : "Configurar credenciais"}
+                    </Button>
+                  )}
+
                   {isConnected ? (
                     <Button variant="outline" size="sm" onClick={() => handleDisconnect(integration!.id)}
                       className="border-border text-muted-foreground gap-2 w-full">
@@ -237,12 +274,20 @@ const Integrations = () => {
           })}
         </div>
 
-        {/* Security note */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Shield className="w-3.5 h-3.5" />
-          <span>OAuth seguro — cada cliente conecta sua própria conta. Tokens criptografados. O Orion só lê dados — nunca altera campanhas sem aprovação.</span>
+          <span>OAuth seguro — cada cliente conecta sua própria conta com suas próprias credenciais. Tokens criptografados.</span>
         </div>
       </div>
+
+      <CredentialsDialog
+        open={credentialsDialog.open}
+        onOpenChange={(open) => setCredentialsDialog(prev => ({ ...prev, open }))}
+        platform={credentialsDialog.platform}
+        platformName={credentialsDialog.name}
+        userId={user?.id || ""}
+        onSaved={handleCredentialsSaved}
+      />
     </AppLayout>
   );
 };
