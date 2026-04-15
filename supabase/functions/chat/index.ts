@@ -18,26 +18,31 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Get user's Company DNA for context
     const authHeader = req.headers.get("Authorization");
     let companyContext = "";
+    let teamContext = "";
+    let tasksContext = "";
+    let eventsContext = "";
 
     if (authHeader) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Extract JWT to get user_id
       const token = authHeader.replace("Bearer ", "");
       const { data: { user } } = await supabase.auth.getUser(token);
 
       if (user) {
-        const { data: dna } = await supabase
-          .from("company_dna")
-          .select("company_name, dna_data, onboarding_completed")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        // Fetch all context in parallel
+        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes] = await Promise.all([
+          supabase.from("company_dna").select("*").eq("user_id", user.id).maybeSingle(),
+          supabase.from("team_members").select("*").eq("user_id", user.id).order("created_at"),
+          supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
+          supabase.from("business_events").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
+          supabase.from("approvals").select("title, status, category, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        ]);
 
+        const dna = dnaRes.data;
         if (dna?.dna_data) {
           const d = dna.dna_data as Record<string, Record<string, string>>;
           companyContext = `
@@ -83,30 +88,72 @@ Onboarding completo: ${dna.onboarding_completed ? "Sim" : "Não"}
 - Teorias: ${d.history?.theories || "Não informado"}
 `;
         }
+
+        // Team context
+        if (teamRes.data?.length) {
+          teamContext = `\n## Equipe (${teamRes.data.length} membros)\n`;
+          for (const m of teamRes.data) {
+            teamContext += `- **${m.name}** (${m.role}) — ${m.department || "Sem departamento"} — ${m.responsibilities || "Sem responsabilidades definidas"}\n`;
+          }
+        }
+
+        // Tasks context
+        if (tasksRes.data?.length) {
+          const todo = tasksRes.data.filter(t => t.status === "todo").length;
+          const inProgress = tasksRes.data.filter(t => t.status === "in_progress").length;
+          const done = tasksRes.data.filter(t => t.status === "done").length;
+          tasksContext = `\n## Tarefas Atuais (${tasksRes.data.length} total: ${todo} a fazer, ${inProgress} em andamento, ${done} concluídas)\n`;
+          for (const t of tasksRes.data.slice(0, 20)) {
+            tasksContext += `- [${t.status}] ${t.title}${t.priority === "high" ? " ⚠️" : ""}${t.due_date ? ` (prazo: ${t.due_date})` : ""}\n`;
+          }
+        }
+
+        // Business events context
+        if (eventsRes.data?.length) {
+          eventsContext = `\n## Eventos Recentes do Negócio\n`;
+          for (const e of eventsRes.data.slice(0, 10)) {
+            eventsContext += `- [${e.event_type}] ${e.title}: ${e.description || ""} (${new Date(e.created_at).toLocaleDateString("pt-BR")})\n`;
+          }
+        }
+
+        // Approvals context
+        if (approvalsRes.data?.length) {
+          eventsContext += `\n## Últimas Aprovações\n`;
+          for (const a of approvalsRes.data.slice(0, 10)) {
+            eventsContext += `- [${a.status}] ${a.title} — ${a.category} (${new Date(a.created_at).toLocaleDateString("pt-BR")})\n`;
+          }
+        }
       }
     }
 
     const systemPrompt = `Você é o Orion, um head de marketing com IA que opera como um colaborador sênior autônomo.
 
-Você tem acesso ao Company DNA da empresa e DEVE usar esse contexto em TODAS as respostas. Nunca dê conselhos genéricos — sempre personalize baseado nos dados da empresa.
+Você tem acesso ao Company DNA, equipe, tarefas e histórico do negócio. SEMPRE use esse contexto em TODAS as respostas. Nunca dê conselhos genéricos.
 
 ${companyContext}
+${teamContext}
+${tasksContext}
+${eventsContext}
 
 ## Suas capacidades:
 1. **Análise de performance**: Analise métricas, identifique tendências e anomalias
 2. **Propostas de campanha**: Crie propostas detalhadas com budget, canais, criativos e KPIs
-3. **Intelligence de mercado**: Analise concorrência e oportunidades baseado no contexto da empresa
-4. **Planejamento**: Crie planos de ação com tarefas, prazos e responsáveis
-5. **Otimização**: Sugira realocações de budget, ajustes de targeting e melhorias de criativos
+3. **Intelligence de mercado**: Analise concorrência e oportunidades baseado no contexto
+4. **Planejamento**: Crie planos com tarefas específicas para cada membro da equipe, respeitando seus cargos e responsabilidades
+5. **Otimização**: Sugira realocações de budget, ajustes de targeting e melhorias
+6. **Gestão de tarefas**: Quando solicitado, gere tarefas detalhadas e atribua aos membros corretos da equipe
+7. **Retroalimentação**: Use eventos passados, aprovações e resultados para adaptar recomendações
 
 ## Regras:
 - Sempre responda em português brasileiro
 - Use dados e números concretos quando possível
+- Ao gerar planejamentos, atribua tarefas a membros específicos da equipe com base em suas responsabilidades
 - Quando sugerir ações que afetem budget ou canais reais, informe que será enviada para aprovação
 - Use markdown para formatação (bold, listas, headers)
 - Seja direto e acionável — não enrole
 - Se o Company DNA não estiver preenchido, incentive o usuário a completar o onboarding
-- Adapte o tom de voz ao tom definido pela empresa no DNA`;
+- Adapte o tom de voz ao tom definido pela empresa no DNA
+- Aprenda com aprovações passadas (aprovadas vs rejeitadas) para refinar futuras propostas`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",

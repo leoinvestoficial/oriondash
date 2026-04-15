@@ -62,6 +62,50 @@ export type Database = {
         }
         Relationships: []
       }
+      business_events: {
+        Row: {
+          company_dna_id: string | null
+          created_at: string
+          description: string | null
+          event_data: Json
+          event_type: string
+          id: string
+          source: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          company_dna_id?: string | null
+          created_at?: string
+          description?: string | null
+          event_data?: Json
+          event_type: string
+          id?: string
+          source?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          company_dna_id?: string | null
+          created_at?: string
+          description?: string | null
+          event_data?: Json
+          event_type?: string
+          id?: string
+          source?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_events_company_dna_id_fkey"
+            columns: ["company_dna_id"]
+            isOneToOne: false
+            referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_history: {
         Row: {
           content: string
@@ -88,6 +132,7 @@ export type Database = {
       }
       company_dna: {
         Row: {
+          brand_assets: Json
           company_name: string | null
           created_at: string
           dna_data: Json
@@ -97,6 +142,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          brand_assets?: Json
           company_name?: string | null
           created_at?: string
           dna_data?: Json
@@ -106,6 +152,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          brand_assets?: Json
           company_name?: string | null
           created_at?: string
           dna_data?: Json
@@ -142,6 +189,72 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tasks: {
+        Row: {
+          ai_context: string | null
+          assignee_id: string | null
+          category: string | null
+          company_dna_id: string | null
+          created_at: string
+          created_by_ai: boolean
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_context?: string | null
+          assignee_id?: string | null
+          category?: string | null
+          company_dna_id?: string | null
+          created_at?: string
+          created_by_ai?: boolean
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_context?: string | null
+          assignee_id?: string | null
+          category?: string | null
+          company_dna_id?: string | null
+          created_at?: string
+          created_by_ai?: boolean
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_company_dna_id_fkey"
+            columns: ["company_dna_id"]
+            isOneToOne: false
+            referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_members: {
         Row: {
