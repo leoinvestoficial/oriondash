@@ -376,6 +376,39 @@ export type Database = {
           },
         ]
       }
+      oauth_credentials: {
+        Row: {
+          client_id: string
+          client_secret: string
+          created_at: string
+          extra_config: Json
+          id: string
+          platform: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          client_secret: string
+          created_at?: string
+          extra_config?: Json
+          id?: string
+          platform: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          client_secret?: string
+          created_at?: string
+          extra_config?: Json
+          id?: string
+          platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
