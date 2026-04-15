@@ -34,12 +34,13 @@ serve(async (req) => {
 
       if (user) {
         // Fetch all context in parallel
-        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes] = await Promise.all([
+        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes, campaignsRes] = await Promise.all([
           supabase.from("company_dna").select("*").eq("user_id", user.id).maybeSingle(),
           supabase.from("team_members").select("*").eq("user_id", user.id).order("created_at"),
           supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
           supabase.from("business_events").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
           supabase.from("approvals").select("title, status, category, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+          supabase.from("campaigns").select("name, status, platform, budget_daily, budget_total, metrics_snapshot, objective").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         ]);
 
         const dna = dnaRes.data;
