@@ -17,9 +17,11 @@ import {
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/tasks", label: "Tarefas", icon: ListTodo },
   { path: "/approvals", label: "Aprovações", icon: CheckCircle2, badge: 3 },
   { path: "/studio", label: "Estúdio", icon: Palette },
   { path: "/chat", label: "Chat", icon: MessageSquare },
+  { path: "/team", label: "Equipe", icon: Users },
 ];
 
 const BOTTOM_ITEMS = [
