@@ -6,6 +6,7 @@ import { OnboardingStepView } from "@/components/onboarding/OnboardingStepView";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingComplete } from "@/components/onboarding/OnboardingComplete";
 import { BrandAssetsStep } from "@/components/onboarding/BrandAssetsStep";
+import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 
 const Onboarding = () => {
@@ -90,6 +91,14 @@ const Onboarding = () => {
         {isComplete && <OnboardingComplete data={formData} />}
         {step && step.isCustom && step.id === "brandAssets" && (
           <BrandAssetsStep
+            data={getStepData(step.block)}
+            onUpdate={(key, value) => updateField(step.block, key, value)}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
+        {step && step.isCustom && step.id === "businessContext" && (
+          <BusinessContextStep
             data={getStepData(step.block)}
             onUpdate={(key, value) => updateField(step.block, key, value)}
             onNext={handleNext}

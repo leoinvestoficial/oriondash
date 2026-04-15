@@ -47,7 +47,7 @@ export interface CompanyDNA {
 
 export interface OnboardingStep {
   id: string;
-  block: keyof CompanyDNA | "brandAssets";
+  block: keyof CompanyDNA | "brandAssets" | "businessContext";
   title: string;
   subtitle: string;
   icon: string;
@@ -67,6 +67,15 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "Marca & Visual",
     subtitle: "Envie o logo, favicon e defina as cores da sua marca.",
     icon: "🎨",
+    isCustom: true,
+    questions: [],
+  },
+  {
+    id: "businessContext",
+    block: "businessContext",
+    title: "Números & Estratégia",
+    subtitle: "Faturamento, budget e estágio do negócio para o Orion se adaptar.",
+    icon: "📈",
     isCustom: true,
     questions: [],
   },

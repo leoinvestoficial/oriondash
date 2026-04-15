@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_integrations: {
+        Row: {
+          access_token: string | null
+          account_id: string | null
+          account_name: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          platform: string
+          refresh_token: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          platform: string
+          refresh_token?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          platform?: string
+          refresh_token?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       approvals: {
         Row: {
           category: string
@@ -106,6 +148,130 @@ export type Database = {
           },
         ]
       }
+      campaign_metrics: {
+        Row: {
+          campaign_id: string
+          clicks: number
+          conversions: number
+          cpa: number | null
+          cpc: number | null
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number
+          revenue: number
+          roas: number | null
+          spend: number
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number
+          conversions?: number
+          cpa?: number | null
+          cpc?: number | null
+          created_at?: string
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number
+          revenue?: number
+          roas?: number | null
+          spend?: number
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number
+          conversions?: number
+          cpa?: number | null
+          cpc?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number
+          revenue?: number
+          roas?: number | null
+          spend?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          budget_daily: number | null
+          budget_total: number | null
+          created_at: string
+          end_date: string | null
+          external_id: string | null
+          id: string
+          integration_id: string | null
+          metrics_snapshot: Json
+          name: string
+          objective: string | null
+          platform: string
+          start_date: string | null
+          status: string
+          targeting: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_daily?: number | null
+          budget_total?: number | null
+          created_at?: string
+          end_date?: string | null
+          external_id?: string | null
+          id?: string
+          integration_id?: string | null
+          metrics_snapshot?: Json
+          name: string
+          objective?: string | null
+          platform: string
+          start_date?: string | null
+          status?: string
+          targeting?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_daily?: number | null
+          budget_total?: number | null
+          created_at?: string
+          end_date?: string | null
+          external_id?: string | null
+          id?: string
+          integration_id?: string | null
+          metrics_snapshot?: Json
+          name?: string
+          objective?: string | null
+          platform?: string
+          start_date?: string | null
+          status?: string
+          targeting?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "ad_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_history: {
         Row: {
           content: string
@@ -133,6 +299,7 @@ export type Database = {
       company_dna: {
         Row: {
           brand_assets: Json
+          business_context: Json
           company_name: string | null
           created_at: string
           dna_data: Json
@@ -143,6 +310,7 @@ export type Database = {
         }
         Insert: {
           brand_assets?: Json
+          business_context?: Json
           company_name?: string | null
           created_at?: string
           dna_data?: Json
@@ -153,6 +321,7 @@ export type Database = {
         }
         Update: {
           brand_assets?: Json
+          business_context?: Json
           company_name?: string | null
           created_at?: string
           dna_data?: Json
@@ -162,6 +331,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      creative_briefs: {
+        Row: {
+          brief_type: string
+          campaign_id: string | null
+          content: Json
+          created_at: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brief_type?: string
+          campaign_id?: string | null
+          content?: Json
+          created_at?: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brief_type?: string
+          campaign_id?: string | null
+          content?: Json
+          created_at?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_briefs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
