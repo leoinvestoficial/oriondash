@@ -24,7 +24,7 @@ serve(async (req) => {
     let tasksContext = "";
     let eventsContext = "";
     let campaignsContext = "";
-    let adaptiveStrategy = "";
+    let _adaptiveStrategy = "";
     let competitorBlock = "";
     let businessIntel = "";
 
