@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import orionLogo from "@/assets/orion-logo.png";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
