@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   Settings,
   Brain,
   Bell,
+  LogOut,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -20,7 +22,6 @@ const NAV_ITEMS = [
 
 const BOTTOM_ITEMS = [
   { path: "/onboarding", label: "Company DNA", icon: Brain },
-  { path: "/settings", label: "Configurações", icon: Settings },
 ];
 
 interface AppLayoutProps {
@@ -29,12 +30,25 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const initials = displayName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
       <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
-        {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
           <div className="w-8 h-8 rounded-lg orion-gradient flex items-center justify-center orion-glow">
             <span className="text-sm text-primary-foreground font-bold">O</span>
@@ -42,7 +56,6 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           <span className="text-heading text-foreground font-medium">Orion</span>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV_ITEMS.map((item) => {
             const isActive = location.pathname === item.path;
@@ -69,7 +82,6 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           })}
         </nav>
 
-        {/* Bottom */}
         <div className="px-3 pb-4 space-y-1 border-t border-border pt-4">
           {BOTTOM_ITEMS.map((item) => {
             const isActive = location.pathname === item.path;
@@ -91,20 +103,20 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           })}
         </div>
 
-        {/* User */}
         <div className="px-4 py-3 border-t border-border flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-orion-surface-3 flex items-center justify-center text-xs text-muted-foreground">
-            JD
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-foreground truncate">João Demo</p>
-            <p className="text-[10px] text-muted-foreground">Admin</p>
+            <p className="text-xs text-foreground truncate">{displayName}</p>
+            <p className="text-[10px] text-muted-foreground">{user?.email}</p>
           </div>
-          <Bell className="w-4 h-4 text-muted-foreground" />
+          <button onClick={handleSignOut} className="text-muted-foreground hover:text-foreground transition-colors">
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
