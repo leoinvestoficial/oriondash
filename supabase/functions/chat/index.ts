@@ -24,6 +24,7 @@ serve(async (req) => {
     let tasksContext = "";
     let eventsContext = "";
     let campaignsContext = "";
+    let adaptiveStrategy = "";
 
     if (authHeader) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
