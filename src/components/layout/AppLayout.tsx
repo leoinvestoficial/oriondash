@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import orionLogo from "@/assets/orion-logo.png";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,9 +57,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     <div className="flex min-h-screen bg-background">
       <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
         <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
-          <div className="w-8 h-8 rounded-lg orion-gradient flex items-center justify-center orion-glow">
-            <span className="text-sm text-primary-foreground font-bold">O</span>
-          </div>
+          <img src={orionLogo} alt="Orion" className="w-8 h-8 rounded-lg object-cover" />
           <span className="text-heading text-foreground font-medium">Orion</span>
         </div>
 
