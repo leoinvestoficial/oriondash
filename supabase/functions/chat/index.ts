@@ -88,6 +88,86 @@ Onboarding completo: ${dna.onboarding_completed ? "Sim" : "Não"}
 - Fracassos: ${d.history?.failures || "Não informado"}
 - Teorias: ${d.history?.theories || "Não informado"}
 `;
+          // Business context
+          const bc = (dna.business_context || {}) as Record<string, string>;
+          const bcd = (dna.dna_data as Record<string, Record<string, string>>)?.businessContext || {};
+          const revenue = Number(bcd.revenue_monthly || bc.revenue_monthly || 0);
+          const budget = Number(bcd.budget_monthly || bc.budget_monthly || 0);
+          const stage = bcd.business_stage || bc.business_stage || "";
+          const focus = bcd.focus_strategy || bc.focus_strategy || "";
+          const avgTicket = Number(bcd.avg_ticket || bc.avg_ticket || 0);
+          const cacTarget = Number(bcd.cac_target || bc.cac_target || 0);
+          const ltv = Number(bcd.ltv || bc.ltv || 0);
+          const budgetRatio = revenue > 0 ? (budget / revenue) : 0;
+
+          if (revenue > 0 || budget > 0 || stage) {
+            companyContext += `\n### Contexto de Negócio
+- Faturamento mensal: R$ ${revenue.toLocaleString("pt-BR")}
+- Budget de marketing: R$ ${budget.toLocaleString("pt-BR")} (${(budgetRatio * 100).toFixed(1)}% do faturamento)
+- Estágio: ${stage || "Não informado"}
+- Foco estratégico: ${focus || "Não informado"}
+- Ticket médio: R$ ${avgTicket || "Não informado"}
+- CAC alvo: R$ ${cacTarget || "Não informado"}
+- LTV: R$ ${ltv || "Não informado"}
+- LTV/CAC ratio: ${cacTarget > 0 && ltv > 0 ? (ltv / cacTarget).toFixed(1) + "x" : "Não calculável"}
+`;
+          }
+
+          // Adaptive strategy instructions based on context
+          let adaptiveStrategy = "\n## ESTRATÉGIA ADAPTATIVA (USE SEMPRE)\n";
+          if (stage === "pre_launch") {
+            adaptiveStrategy += `A empresa está em PRÉ-LANÇAMENTO. Priorize:
+- Conteúdo orgânico e community building
+- Validação de posicionamento e messaging
+- Estratégias de custo zero ou baixo (social media orgânico, PR, parcerias)
+- Criação de waiting list, early adopters
+- NÃO sugira campanhas de performance caras sem justificativa\n`;
+          } else if (stage === "launch") {
+            adaptiveStrategy += `A empresa está em LANÇAMENTO. Priorize:
+- Mix de awareness + conversão
+- Campanhas de teste com budget controlado
+- Métricas de validação (CAC, taxa de conversão inicial)
+- Rápida iteração de criativos\n`;
+          } else if (stage === "growth") {
+            adaptiveStrategy += `A empresa está em CRESCIMENTO. Priorize:
+- Escalar canais que já funcionam
+- Otimização de CAC e ROAS
+- Expansão de audiência
+- Automações e processos\n`;
+          } else if (stage === "scale") {
+            adaptiveStrategy += `A empresa está em ESCALA. Priorize:
+- Eficiência operacional
+- Diversificação de canais
+- Brand building de longo prazo
+- LTV maximization\n`;
+          }
+
+          if (budgetRatio > 0) {
+            if (budgetRatio < 0.05) {
+              adaptiveStrategy += `\nBudget CONSERVADOR (${(budgetRatio*100).toFixed(1)}%). Foque em:
+- ROI máximo, zero desperdício
+- Canais com maior previsibilidade
+- Orgânico como complemento essencial\n`;
+            } else if (budgetRatio >= 0.15) {
+              adaptiveStrategy += `\nBudget AGRESSIVO (${(budgetRatio*100).toFixed(1)}%). Pode:
+- Testar múltiplos canais simultaneamente
+- Investir em brand awareness
+- Aceitar CAC mais alto para ganhar market share
+- Mas SEMPRE monitore burn rate\n`;
+            }
+          }
+
+          if (focus === "organic") {
+            adaptiveStrategy += `\nFoco em ORGÂNICO declarado. Priorize:
+- SEO, conteúdo, social media, comunidade
+- Sugira mídia paga APENAS como complemento quando fizer sentido
+- Estratégias de growth hacking e viral loops\n`;
+          } else if (focus === "paid") {
+            adaptiveStrategy += `\nFoco em MÍDIA PAGA. Priorize:
+- Otimização de campanhas, ROAS, CPA
+- A/B testing de criativos
+- Estrutura de funil (awareness → consideração → conversão)\n`;
+          }
         }
 
         // Team context
@@ -106,6 +186,19 @@ Onboarding completo: ${dna.onboarding_completed ? "Sim" : "Não"}
           tasksContext = `\n## Tarefas Atuais (${tasksRes.data.length} total: ${todo} a fazer, ${inProgress} em andamento, ${done} concluídas)\n`;
           for (const t of tasksRes.data.slice(0, 20)) {
             tasksContext += `- [${t.status}] ${t.title}${t.priority === "high" ? " ⚠️" : ""}${t.due_date ? ` (prazo: ${t.due_date})` : ""}\n`;
+          }
+        }
+
+        // Campaigns context
+        let campaignsContext = "";
+        if (campaignsRes.data?.length) {
+          campaignsContext = `\n## Campanhas Ativas (${campaignsRes.data.length})\n`;
+          for (const c of campaignsRes.data) {
+            const metrics = c.metrics_snapshot as Record<string, any> || {};
+            campaignsContext += `- **${c.name}** [${c.platform}/${c.status}] — Objetivo: ${c.objective || "N/A"} — Budget diário: R$ ${c.budget_daily || 0}`;
+            if (metrics.roas) campaignsContext += ` — ROAS: ${metrics.roas}`;
+            if (metrics.ctr) campaignsContext += ` — CTR: ${metrics.ctr}%`;
+            campaignsContext += `\n`;
           }
         }
 
