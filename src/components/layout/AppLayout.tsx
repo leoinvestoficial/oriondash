@@ -56,9 +56,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
-          <img src={orionLogo} alt="Orion" className="w-8 h-8 rounded-lg object-cover" />
-          <span className="text-heading text-foreground font-medium">Orion</span>
+        <div className="flex items-center justify-center px-5 py-5 border-b border-border">
+          <img src={orionLogo} alt="Orion" className="w-10 h-10 rounded-lg object-cover" />
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
