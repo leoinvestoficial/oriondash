@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Send, Sparkles, BarChart3, Lightbulb, Brain } from "lucide-react";
+import { Send, Sparkles, BarChart3, Lightbulb, Brain, ListTodo, FileText, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { streamChat, ChatMessage } from "@/lib/chatStream";
+import { parseActions, executeAction } from "@/lib/chatActions";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,8 +14,9 @@ import { ChatInput } from "@/components/chat/ChatInput";
 
 const SUGGESTIONS = [
   { icon: BarChart3, text: "Monte um planejamento de marketing para os próximos 3 meses" },
+  { icon: ListTodo, text: "Crie tarefas para minha equipe baseado nas prioridades atuais" },
   { icon: Lightbulb, text: "Quais canais fazem mais sentido para o meu negócio?" },
-  { icon: Sparkles, text: "Crie uma proposta de campanha para o meu produto" },
+  { icon: Sparkles, text: "Crie uma proposta de campanha e envie para aprovação" },
 ];
 
 const Chat = () => {
@@ -49,6 +51,14 @@ const Chat = () => {
     await supabase.from("chat_history").insert({ user_id: user.id, role, content });
   };
 
+  const processActions = async (content: string) => {
+    if (!user) return;
+    const { actions } = parseActions(content);
+    for (const action of actions) {
+      await executeAction(action, user.id, dna?.id);
+    }
+  };
+
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
     if (!msg || isStreaming) return;
@@ -65,12 +75,14 @@ const Chat = () => {
 
     const updateAssistant = (chunk: string) => {
       assistantContent += chunk;
+      // Show content without action blocks
+      const { cleanContent } = parseActions(assistantContent);
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant") {
-          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantContent } : m));
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: cleanContent } : m));
         }
-        return [...prev, { role: "assistant", content: assistantContent }];
+        return [...prev, { role: "assistant", content: cleanContent }];
       });
     };
 
@@ -81,7 +93,10 @@ const Chat = () => {
         onDone: async () => {
           setIsStreaming(false);
           if (assistantContent) {
+            // Save full content (with action markers) to history
             await saveMessage("assistant", assistantContent);
+            // Execute any actions
+            await processActions(assistantContent);
           }
         },
         onError: (error) => {
@@ -112,6 +127,17 @@ const Chat = () => {
                 ? `Contexto: ${dna.company_name} · IA com Company DNA`
                 : "Consultas livres com IA contextualizada"}
             </p>
+          </div>
+          <div className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1 bg-orion-surface-2 px-2 py-1 rounded-md">
+              <ListTodo className="w-3 h-3" /> Tarefas
+            </span>
+            <span className="flex items-center gap-1 bg-orion-surface-2 px-2 py-1 rounded-md">
+              <CheckCircle2 className="w-3 h-3" /> Aprovações
+            </span>
+            <span className="flex items-center gap-1 bg-orion-surface-2 px-2 py-1 rounded-md">
+              <FileText className="w-3 h-3" /> Briefs
+            </span>
           </div>
         </div>
 

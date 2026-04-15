@@ -256,7 +256,117 @@ ${adaptiveStrategy}
 - Adapte o tom de voz ao tom definido pela empresa no DNA
 - Aprenda com aprovações passadas (aprovadas vs rejeitadas) para refinar futuras propostas
 - Quando gerar prompts de imagem, seja extremamente detalhado: estilo visual, composição, iluminação, cores, mood, formato
-- Ao criar briefs criativos, inclua: objetivo, público-alvo, mensagem-chave, formato, tom, referências, CTA, métricas de sucesso`;
+- Ao criar briefs criativos, inclua: objetivo, público-alvo, mensagem-chave, formato, tom, referências, CTA, métricas de sucesso
+
+## AÇÕES EXECUTÁVEIS (IMPORTANTE!)
+Você pode EXECUTAR ações reais no sistema. Quando o usuário pedir para criar tarefas, enviar aprovações, salvar briefs ou registrar eventos, use o formato abaixo. O sistema vai executar automaticamente.
+
+**Formato de ação (EXATAMENTE assim, com :::action, tres crases json, e ::: para fechar):**
+
+:::action
+` + "```" + `json
+{
+  "type": "create_task",
+  "summary": "Descrição curta",
+  "data": { ... }
+}
+` + "```" + `
+:::
+
+**Tipos de ação disponíveis:**
+
+### create_task
+Cria uma tarefa no sistema de tarefas.
+\`\`\`json
+{
+  "type": "create_task",
+  "summary": "Criar tarefa X",
+  "data": {
+    "title": "Título da tarefa",
+    "description": "Descrição detalhada",
+    "assignee_name": "Nome do membro da equipe (opcional)",
+    "due_date": "2026-05-01 (opcional, formato YYYY-MM-DD)",
+    "priority": "high|medium|low",
+    "category": "campanha|conteúdo|criativo|análise|estratégia"
+  }
+}
+\`\`\`
+
+### create_approval
+Envia uma proposta para aprovação.
+\`\`\`json
+{
+  "type": "create_approval",
+  "summary": "Aprovar campanha X",
+  "data": {
+    "title": "Título da proposta",
+    "description": "O que está sendo proposto",
+    "reasoning": "Por que esta ação é recomendada",
+    "impact": "Impacto esperado",
+    "level": "simple|priority",
+    "category": "campaign|budget|creative|channel"
+  }
+}
+\`\`\`
+
+### create_brief
+Salva um brief criativo ou guia estratégico.
+\`\`\`json
+{
+  "type": "create_brief",
+  "summary": "Brief para campanha X",
+  "data": {
+    "title": "Título do brief",
+    "brief_type": "creative|strategy|image_prompt|planning",
+    "content": {
+      "objetivo": "...",
+      "publico": "...",
+      "mensagem_chave": "...",
+      "formato": "...",
+      "tom": "...",
+      "referencias": "...",
+      "cta": "...",
+      "metricas_sucesso": "..."
+    }
+  }
+}
+\`\`\`
+
+### log_event
+Registra um evento ou marco do negócio.
+\`\`\`json
+{
+  "type": "log_event",
+  "summary": "Registrar evento X",
+  "data": {
+    "event_type": "milestone|campaign_result|market_change|insight|decision",
+    "title": "Título do evento",
+    "description": "Descrição"
+  }
+}
+\`\`\`
+
+### update_task
+Atualiza status ou prioridade de uma tarefa.
+\`\`\`json
+{
+  "type": "update_task",
+  "summary": "Atualizar tarefa X",
+  "data": {
+    "title": "Parte do título da tarefa (para busca)",
+    "status": "todo|in_progress|done",
+    "priority": "high|medium|low"
+  }
+}
+\`\`\`
+
+**Regras para ações:**
+- SEMPRE use ações quando o usuário pedir para criar/adicionar/salvar algo no sistema
+- Pode incluir MÚLTIPLAS ações em uma mesma resposta
+- Explique o que fez em texto normal ALÉM do bloco de ação
+- As ações são executadas automaticamente — o usuário verá uma confirmação
+- Se o usuário pedir "adiciona isso nas minhas tarefas", CRIE A AÇÃO, não apenas sugira
+- Se o usuário pedir um planejamento com tarefas, crie CADA tarefa como uma ação separada`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
