@@ -2,95 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Orion — Midnight Intelligence */
+    --background: 230 45% 8%;       /* #0B0E1A */
+    --foreground: 220 20% 90%;      /* light gray text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 232 38% 12%;            /* #12152B */
+    --card-foreground: 220 20% 90%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 232 38% 12%;
+    --popover-foreground: 220 20% 90%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 243 76% 59%;         /* #4F46E5 indigo */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 233 30% 16%;       /* #1A1E38 */
+    --secondary-foreground: 220 20% 85%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 233 24% 20%;           /* #242849 */
+    --muted-foreground: 230 15% 55%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 243 65% 70%;          /* #818CF8 violet lighter */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;       /* #EF4444 */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 233 20% 22%;          /* #2E3357 */
+    --input: 233 20% 22%;
+    --ring: 243 76% 59%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Orion custom tokens */
+    --orion-surface-1: 232 38% 12%;    /* #12152B */
+    --orion-surface-2: 233 30% 16%;    /* #1A1E38 */
+    --orion-surface-3: 233 24% 20%;    /* #242849 */
+    --orion-surface-4: 233 20% 27%;    /* #3A3F68 */
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --orion-violet: 243 76% 59%;       /* #4F46E5 */
+    --orion-violet-light: 239 84% 76%; /* #818CF8 */
+    --orion-violet-soft: 234 100% 90%; /* #C7D2FE */
 
-    --sidebar-primary: 240 5.9% 10%;
+    --orion-coral: 0 100% 71%;        /* #FF6B6B */
+    --orion-amber: 51 100% 71%;       /* #FFE66D */
+    --orion-teal: 171 57% 55%;        /* #4ECDC4 */
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --orion-success: 160 60% 45%;     /* #10B981 */
+    --orion-warning: 38 92% 50%;      /* #F59E0B */
+    --orion-info: 217 91% 60%;        /* #3B82F6 */
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 230 45% 6%;
+    --sidebar-foreground: 220 20% 85%;
+    --sidebar-primary: 243 76% 59%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 233 30% 16%;
+    --sidebar-accent-foreground: 220 20% 85%;
+    --sidebar-border: 233 20% 18%;
+    --sidebar-ring: 243 76% 59%;
   }
 }
 
@@ -100,6 +72,33 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4 {
+    font-weight: 500;
+  }
+
+  code, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Orion custom utilities */
+@layer utilities {
+  .orion-glow {
+    box-shadow: 0 0 20px -5px hsl(var(--orion-violet) / 0.3);
+  }
+
+  .orion-gradient {
+    background: linear-gradient(135deg, hsl(var(--orion-violet)), hsl(var(--orion-violet-light)));
+  }
+
+  .orion-text-gradient {
+    background: linear-gradient(135deg, hsl(var(--orion-violet-light)), hsl(var(--orion-teal)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }

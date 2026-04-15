@@ -1,16 +1,23 @@
-// Update this page (the content is just a fallback if you fail to update the page)
-
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="text-center animate-fade-in">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl orion-gradient flex items-center justify-center orion-glow">
+          <span className="text-2xl text-primary-foreground font-bold">O</span>
+        </div>
+        <h1 className="text-display text-foreground mb-2">
+          <span className="orion-text-gradient">Orion</span>
+        </h1>
+        <p className="text-muted-foreground mb-6">Marketing Intelligence Platform</p>
+        <a
+          href="/onboarding"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg orion-gradient text-primary-foreground orion-glow hover:opacity-90 transition-opacity text-sm font-medium"
+        >
+          Iniciar Onboarding →
+        </a>
+      </div>
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
