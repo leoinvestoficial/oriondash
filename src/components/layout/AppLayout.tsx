@@ -26,6 +26,7 @@ const NAV_ITEMS = [
 ];
 
 const BOTTOM_ITEMS = [
+  { path: "/integrations", label: "Integrações", icon: Plug },
   { path: "/onboarding", label: "Company DNA", icon: Brain },
 ];
 
