@@ -25,7 +25,8 @@ serve(async (req) => {
     let eventsContext = "";
     let campaignsContext = "";
     let adaptiveStrategy = "";
-    let competitorAnalysis = "";
+    let competitorBlock = "";
+    let businessIntel = "";
 
     if (authHeader) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -36,99 +37,73 @@ serve(async (req) => {
       const { data: { user } } = await supabase.auth.getUser(token);
 
       if (user) {
-        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes, campaignsRes] = await Promise.all([
+        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes, campaignsRes, briefsRes] = await Promise.all([
           supabase.from("company_dna").select("*").eq("user_id", user.id).maybeSingle(),
           supabase.from("team_members").select("*").eq("user_id", user.id).order("created_at"),
           supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
           supabase.from("business_events").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
           supabase.from("approvals").select("title, status, category, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-          supabase.from("campaigns").select("name, status, platform, budget_daily, budget_total, metrics_snapshot, objective").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+          supabase.from("campaigns").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+          supabase.from("creative_briefs").select("title, brief_type, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         ]);
 
         const dna = dnaRes.data;
         if (dna?.dna_data) {
           const d = dna.dna_data as Record<string, Record<string, string>>;
-          companyContext = `
-## Company DNA — ${dna.company_name || "Empresa do usuário"}
-Onboarding completo: ${dna.onboarding_completed ? "Sim" : "Não"}
-
-### Identidade
-- Empresa: ${d.identity?.companyName || "Não informado"}
-- Produto: ${d.identity?.product || "Não informado"}
-- Posicionamento: ${d.identity?.positioning || "Não informado"}
-- Tom de voz: ${d.identity?.toneOfVoice || "Não informado"}
-- Valores: ${d.identity?.values || "Não informado"}
-
-### Mercado
-- Categoria: ${d.market?.category || "Não informado"}
-- Concorrentes: ${d.market?.competitors || "Não informado"}
-- Maturidade: ${d.market?.maturity || "Não informado"}
-- Diferencial: ${d.market?.competitivePosition || "Não informado"}
-
-### Público
-- Cliente ideal: ${d.audience?.idealCustomer || "Não informado"}
-- Comportamentos: ${d.audience?.behaviors || "Não informado"}
-- Linguagem: ${d.audience?.language || "Não informado"}
-- Motivações: ${d.audience?.motivations || "Não informado"}
-
-### Objetivos
-- OKRs: ${d.objectives?.okrs || "Não informado"}
-- Metas de marketing: ${d.objectives?.marketingGoals || "Não informado"}
-- Horizontes: ${d.objectives?.horizons || "Não informado"}
-- Prioridades: ${d.objectives?.priorities || "Não informado"}
-
-### Restrições
-- Conteúdo proibido: ${d.constraints?.forbidden || "Não informado"}
-- Budget: ${d.constraints?.budget || "Não informado"}
-- Sazonalidade: ${d.constraints?.seasonality || "Não informado"}
-- Canais prioritários: ${d.constraints?.priorityChannels || "Não informado"}
-- Canais excluídos: ${d.constraints?.excludedChannels || "Não informado"}
-
-### Histórico
-- Tentativas passadas: ${d.history?.pastAttempts || "Não informado"}
-- Sucessos: ${d.history?.successes || "Não informado"}
-- Fracassos: ${d.history?.failures || "Não informado"}
-- Teorias: ${d.history?.theories || "Não informado"}
-`;
-          // Build competitor deep-analysis block
-          const competitors = d.market?.competitors || "";
-          if (competitors) {
-            competitorAnalysis = `
-## ANÁLISE PROFUNDA DE CONCORRENTES (OBRIGATÓRIO)
-Concorrentes informados: ${competitors}
-
-Quando o usuário pedir análise, sugestões de conteúdo, campanhas ou estratégia, você DEVE:
-
-### 1. Análise de Perfis dos Concorrentes
-Para CADA concorrente listado acima (diretos e indiretos):
-- **Posicionamento**: Como se posicionam no mercado vs a empresa do usuário
-- **Pontos fortes**: O que fazem bem em marketing/comunicação
-- **Pontos fracos**: Onde são vulneráveis e o usuário pode atacar
-- **Canais principais**: Onde são mais ativos e eficazes
-- **Tom de comunicação**: Como falam com o público
-- **Estratégia de conteúdo**: Que tipos de conteúdo produzem e com que frequência
-- **Gaps**: O que NÃO estão fazendo que o usuário pode explorar
-
-### 2. Análise de Conteúdo Viral do Nicho
-Ao sugerir conteúdo ou campanhas:
-- Identifique FORMATOS que viralizam na categoria (${d.market?.category || "do negócio"})
-- Analise HOOKS que funcionam nesse nicho (primeiros 3 segundos / primeiras linhas)
-- Identifique TENDÊNCIAS atuais de formato (carrossel, reels, threads, etc.)
-- Sugira ADAPTAÇÕES de tendências virais para o contexto específico da marca
-- Cite padrões reais: "Conteúdos de bastidores geram 3x mais engagement no nicho de X"
-- Identifique HORÁRIOS e FREQUÊNCIA ideais para o nicho
-
-### 3. Inteligência Competitiva Ativa
-- Compare métricas estimadas (engagement rate, frequência de postagem, crescimento)
-- Identifique campanhas sazonais ou lançamentos dos concorrentes
-- Sugira contra-estratégias específicas baseadas em movimentos da concorrência
-- Aponte oportunidades de "oceano azul" — nichos/formatos que ninguém está explorando
-`;
-          }
-
-          // Business context
           const bc = (dna.business_context || {}) as Record<string, string>;
-          const bcd = (dna.dna_data as Record<string, Record<string, string>>)?.businessContext || {};
+          const bcd = d?.businessContext || {};
+
+          // ===== COMPANY DNA FULL CONTEXT =====
+          companyContext = `
+## 🧬 COMPANY DNA COMPLETO — ${dna.company_name || "Empresa"}
+Onboarding: ${dna.onboarding_completed ? "✅ Completo" : "⚠️ Incompleto — incentive a completar"}
+
+### IDENTIDADE & POSICIONAMENTO
+- **Empresa**: ${d.identity?.companyName || "—"}
+- **Produto/Serviço**: ${d.identity?.product || "—"}
+- **Posicionamento desejado**: ${d.identity?.positioning || "—"}
+- **Tom de voz**: ${d.identity?.toneOfVoice || "—"}
+- **Valores inegociáveis**: ${d.identity?.values || "—"}
+- **Conteúdo que a marca amou**: ${d.identity?.lovedExample || "—"}
+- **Conteúdo vetado (e por quê)**: ${d.identity?.vetoedExample || "—"}
+
+### MERCADO & COMPETIÇÃO
+- **Categoria**: ${d.market?.category || "—"}
+- **Concorrentes (diretos e indiretos)**: ${d.market?.competitors || "—"}
+- **Maturidade do mercado**: ${d.market?.maturity || "—"}
+- **Diferencial competitivo**: ${d.market?.competitivePosition || "—"}
+
+### PÚBLICO-ALVO
+- **Cliente ideal (ICP)**: ${d.audience?.idealCustomer || "—"}
+- **Comportamentos**: ${d.audience?.behaviors || "—"}
+- **Linguagem do público**: ${d.audience?.language || "—"}
+- **Motivações e dores**: ${d.audience?.motivations || "—"}
+- **Persona 1**: ${d.audience?.persona1 || "—"}
+- **Persona 2**: ${d.audience?.persona2 || "—"}
+- **Persona 3**: ${d.audience?.persona3 || "—"}
+
+### OBJETIVOS & METAS
+- **OKRs**: ${d.objectives?.okrs || "—"}
+- **Metas de marketing**: ${d.objectives?.marketingGoals || "—"}
+- **Horizontes de tempo**: ${d.objectives?.horizons || "—"}
+- **Prioridades em conflito**: ${d.objectives?.priorities || "—"}
+
+### RESTRIÇÕES & LIMITES
+- **Conteúdo proibido**: ${d.constraints?.forbidden || "—"}
+- **Temas sensíveis**: ${d.constraints?.sensitiveTopics || "—"}
+- **Budget declarado**: ${d.constraints?.budget || "—"}
+- **Sazonalidade**: ${d.constraints?.seasonality || "—"}
+- **Canais prioritários**: ${d.constraints?.priorityChannels || "—"}
+- **Canais excluídos**: ${d.constraints?.excludedChannels || "—"}
+
+### HISTÓRICO & APRENDIZADOS
+- **O que já foi tentado**: ${d.history?.pastAttempts || "—"}
+- **O que funcionou**: ${d.history?.successes || "—"}
+- **O que fracassou**: ${d.history?.failures || "—"}
+- **Teorias do time**: ${d.history?.theories || "—"}
+`;
+
+          // ===== BUSINESS INTELLIGENCE =====
           const revenue = Number(bcd.revenue_monthly || bc.revenue_monthly || 0);
           const budget = Number(bcd.budget_monthly || bc.budget_monthly || 0);
           const stage = bcd.business_stage || bc.business_stage || "";
@@ -136,244 +111,322 @@ Ao sugerir conteúdo ou campanhas:
           const avgTicket = Number(bcd.avg_ticket || bc.avg_ticket || 0);
           const cacTarget = Number(bcd.cac_target || bc.cac_target || 0);
           const ltv = Number(bcd.ltv || bc.ltv || 0);
-          const budgetRatio = revenue > 0 ? (budget / revenue) : 0;
+          const budgetRatio = revenue > 0 ? budget / revenue : 0;
+          const ltvCac = cacTarget > 0 && ltv > 0 ? ltv / cacTarget : 0;
 
-          if (revenue > 0 || budget > 0 || stage) {
-            companyContext += `\n### Contexto de Negócio
-- Faturamento mensal: R$ ${revenue.toLocaleString("pt-BR")}
-- Budget de marketing: R$ ${budget.toLocaleString("pt-BR")} (${(budgetRatio * 100).toFixed(1)}% do faturamento)
-- Estágio: ${stage || "Não informado"}
-- Foco estratégico: ${focus || "Não informado"}
-- Ticket médio: R$ ${avgTicket || "Não informado"}
-- CAC alvo: R$ ${cacTarget || "Não informado"}
-- LTV: R$ ${ltv || "Não informado"}
-- LTV/CAC ratio: ${cacTarget > 0 && ltv > 0 ? (ltv / cacTarget).toFixed(1) + "x" : "Não calculável"}
+          businessIntel = `
+### 📊 INTELIGÊNCIA DE NEGÓCIO (BASE PARA TODAS AS DECISÕES)
+- **Faturamento mensal**: R$ ${revenue.toLocaleString("pt-BR")} ${revenue === 0 ? "(não informado)" : ""}
+- **Budget de marketing**: R$ ${budget.toLocaleString("pt-BR")} ${budget > 0 && revenue > 0 ? `(${(budgetRatio * 100).toFixed(1)}% do faturamento)` : ""}
+- **Estágio do negócio**: ${stage || "não informado"}
+- **Foco estratégico**: ${focus || "não informado"}
+- **Ticket médio**: ${avgTicket ? `R$ ${avgTicket.toLocaleString("pt-BR")}` : "não informado"}
+- **CAC alvo**: ${cacTarget ? `R$ ${cacTarget.toLocaleString("pt-BR")}` : "não informado"}
+- **LTV**: ${ltv ? `R$ ${ltv.toLocaleString("pt-BR")}` : "não informado"}
+- **LTV/CAC**: ${ltvCac > 0 ? `${ltvCac.toFixed(1)}x ${ltvCac < 3 ? "⚠️ ABAIXO DO IDEAL (3x+)" : "✅ SAUDÁVEL"}` : "não calculável"}
+
+#### REGRAS DE OPERAÇÃO BASEADAS NO CONTEXTO:
 `;
-          }
 
-          adaptiveStrategy = "\n## ESTRATÉGIA ADAPTATIVA (USE SEMPRE)\n";
-          if (stage === "pre_launch") {
-            adaptiveStrategy += `A empresa está em PRÉ-LANÇAMENTO. Priorize:
-- Conteúdo orgânico e community building
-- Validação de posicionamento e messaging
-- Estratégias de custo zero ou baixo (social media orgânico, PR, parcerias)
-- Criação de waiting list, early adopters
-- NÃO sugira campanhas de performance caras sem justificativa\n`;
-          } else if (stage === "launch") {
-            adaptiveStrategy += `A empresa está em LANÇAMENTO. Priorize:
-- Mix de awareness + conversão
-- Campanhas de teste com budget controlado
-- Métricas de validação (CAC, taxa de conversão inicial)
-- Rápida iteração de criativos\n`;
-          } else if (stage === "growth") {
-            adaptiveStrategy += `A empresa está em CRESCIMENTO. Priorize:
-- Escalar canais que já funcionam
-- Otimização de CAC e ROAS
-- Expansão de audiência
-- Automações e processos\n`;
-          } else if (stage === "scale") {
-            adaptiveStrategy += `A empresa está em ESCALA. Priorize:
-- Eficiência operacional
-- Diversificação de canais
-- Brand building de longo prazo
-- LTV maximization\n`;
-          }
+          // Stage-based rules
+          const stageRules: Record<string, string> = {
+            pre_launch: `**PRÉ-LANÇAMENTO** → Prioridade absoluta: validação de mercado, build audience, zero gasto desnecessário.
+- Foque 80% em orgânico: comunidade, conteúdo educativo, waitlist, parcerias
+- 20% em testes de mensagem pagos (máx R$ ${Math.min(budget, 500)}/dia)
+- Métricas-chave: sign-ups, engagement rate, custo por lead de waitlist
+- NUNCA sugira escalar mídia paga nesta fase sem validar product-market fit`,
+            launch: `**LANÇAMENTO** → Equilíbrio entre awareness e primeiras conversões.
+- 60% awareness (conteúdo viral, PR, influencers micro), 40% conversão
+- Teste 3-5 criativos simultâneos com R$ ${Math.round(budget * 0.1)}/dia cada
+- Itere semanalmente: mate o que não funciona, escale o que funciona
+- Métricas: CAC real vs alvo (R$ ${cacTarget || "?"}), taxa de conversão, payback period`,
+            growth: `**CRESCIMENTO** → Escale o que funciona, otimize custos, diversifique canais.
+- 70% nos canais validados, 30% em experimentação
+- Budget sugerido por canal baseado em ROAS histórico
+- Foco em LTV/CAC ratio — hoje está em ${ltvCac > 0 ? ltvCac.toFixed(1) + "x" : "?"} (meta: 3x+)
+- Automações de nurturing e retenção são prioridade`,
+            scale: `**ESCALA** → Eficiência operacional, brand building, diversificação.
+- Investir em brand awareness (15-20% do budget)
+- Programmatic + retargeting sofisticado
+- Foco em redução de CAC via brand equity
+- Expansão para novos segmentos/mercados`,
+          };
+          businessIntel += stageRules[stage] || "Estágio não definido — pergunte ao usuário sobre a fase atual do negócio.\n";
 
-          if (budgetRatio > 0) {
+          // Budget rules
+          if (budget > 0 && revenue > 0) {
             if (budgetRatio < 0.05) {
-              adaptiveStrategy += `\nBudget CONSERVADOR (${(budgetRatio*100).toFixed(1)}%). Foque em:
-- ROI máximo, zero desperdício
-- Canais com maior previsibilidade
-- Orgânico como complemento essencial\n`;
-            } else if (budgetRatio >= 0.15) {
-              adaptiveStrategy += `\nBudget AGRESSIVO (${(budgetRatio*100).toFixed(1)}%). Pode:
-- Testar múltiplos canais simultaneamente
-- Investir em brand awareness
-- Aceitar CAC mais alto para ganhar market share
-- Mas SEMPRE monitore burn rate\n`;
+              businessIntel += `\n**BUDGET CONSERVADOR** (${(budgetRatio*100).toFixed(1)}%): Cada real conta. Priorize canais com ROI comprovado. Orgânico é essencial como multiplicador.`;
+            } else if (budgetRatio < 0.10) {
+              businessIntel += `\n**BUDGET MODERADO** (${(budgetRatio*100).toFixed(1)}%): Espaço para testar 2-3 canais. Aloque 70% no canal principal, 30% em teste.`;
+            } else if (budgetRatio < 0.20) {
+              businessIntel += `\n**BUDGET SAUDÁVEL** (${(budgetRatio*100).toFixed(1)}%): Margem para agressividade. Pode testar formatos premium e influencers.`;
+            } else {
+              businessIntel += `\n**BUDGET AGRESSIVO** (${(budgetRatio*100).toFixed(1)}%): Alta capacidade de investimento. Domine os canais prioritários, invista em brand e conquest.`;
             }
           }
 
+          // Focus rules
           if (focus === "organic") {
-            adaptiveStrategy += `\nFoco em ORGÂNICO declarado. Priorize:
-- SEO, conteúdo, social media, comunidade
-- Sugira mídia paga APENAS como complemento quando fizer sentido
-- Estratégias de growth hacking e viral loops\n`;
+            businessIntel += `\n\n**FOCO DECLARADO: ORGÂNICO**
+→ Toda sugestão deve priorizar: SEO, social media, community, PR, parcerias, UGC, viral loops
+→ Mídia paga APENAS como boost pontual de conteúdo orgânico de alta performance
+→ Métricas: engagement rate, reach orgânico, share of voice, custo por conteúdo`;
           } else if (focus === "paid") {
-            adaptiveStrategy += `\nFoco em MÍDIA PAGA. Priorize:
-- Otimização de campanhas, ROAS, CPA
-- A/B testing de criativos
-- Estrutura de funil (awareness → consideração → conversão)\n`;
+            businessIntel += `\n\n**FOCO DECLARADO: MÍDIA PAGA**
+→ Toda sugestão deve incluir: budget split, targeting, formatos de anúncio, estrutura de campanha
+→ Otimização contínua: CPA, ROAS, CTR, frequência, fadiga criativa
+→ Orgânico como suporte de retargeting e social proof`;
+          } else if (focus === "hybrid") {
+            businessIntel += `\n\n**FOCO HÍBRIDO**
+→ Balance orgânico + pago em cada recomendação
+→ Orgânico alimenta pago (conteúdo validado vira anúncio)
+→ Pago amplifica orgânico (boost de posts com tração natural)`;
+          }
+
+          // ===== COMPETITOR ANALYSIS BLOCK =====
+          const competitors = d.market?.competitors || "";
+          if (competitors) {
+            competitorBlock = `
+## 🎯 ANÁLISE COMPETITIVA OBRIGATÓRIA
+**Concorrentes declarados**: ${competitors}
+
+Quando o usuário pedir QUALQUER recomendação (conteúdo, campanha, estratégia), você DEVE considerar os concorrentes acima como referência. Sua análise deve cobrir:
+
+### Framework de Análise por Concorrente:
+1. **Posicionamento vs nós**: Onde se posicionam? Onde somos mais fortes?
+2. **Estratégia de conteúdo**: Formatos usados, frequência, tom, temas
+3. **Presença por canal**: Onde são fortes? Onde são fracos?
+4. **Gaps exploráveis**: O que NÃO fazem que podemos dominar?
+5. **Contra-estratégia**: Para cada ponto forte deles, qual nossa resposta?
+
+### Análise de Conteúdo Viral do Nicho (${d.market?.category || "—"}):
+- Quais FORMATOS viralizam nessa categoria? (carrossel, reels curtos, threads, memes educativos, etc.)
+- Quais HOOKS funcionam? (primeiros 3 segundos de vídeo, primeira linha de copy)
+- Quais TENDÊNCIAS estão em alta AGORA no nicho?
+- Como ADAPTAR tendências ao tom de voz "${d.identity?.toneOfVoice || "da marca"}"?
+- Que tipo de conteúdo os concorrentes NÃO estão fazendo?
+
+### Benchmarks do Nicho:
+- Engagement rate médio esperado: baseado na categoria
+- Frequência de postagem ideal
+- Melhores horários estimados para o público-alvo
+- CPM/CPC médio do setor (se relevante para mídia paga)
+`;
           }
         }
 
+        // ===== TEAM =====
         if (teamRes.data?.length) {
-          teamContext = `\n## Equipe (${teamRes.data.length} membros)\n`;
+          teamContext = `\n## 👥 EQUIPE (${teamRes.data.length} membros)\n`;
           for (const m of teamRes.data) {
-            teamContext += `- **${m.name}** (${m.role}) — ${m.department || "Sem departamento"} — ${m.responsibilities || "Sem responsabilidades definidas"}\n`;
+            teamContext += `- **${m.name}** | ${m.role} | ${m.department || "—"} | Responsabilidades: ${m.responsibilities || "não definidas"}\n`;
           }
+          teamContext += `\nAo criar tarefas, SEMPRE atribua ao membro mais adequado com base nas responsabilidades acima.\n`;
         }
 
+        // ===== TASKS =====
         if (tasksRes.data?.length) {
-          const todo = tasksRes.data.filter((t: any) => t.status === "todo").length;
-          const inProgress = tasksRes.data.filter((t: any) => t.status === "in_progress").length;
-          const done = tasksRes.data.filter((t: any) => t.status === "done").length;
-          tasksContext = `\n## Tarefas Atuais (${tasksRes.data.length} total: ${todo} a fazer, ${inProgress} em andamento, ${done} concluídas)\n`;
-          for (const t of tasksRes.data.slice(0, 20)) {
-            tasksContext += `- [${t.status}] ${t.title}${t.priority === "high" ? " ⚠️" : ""}${t.due_date ? ` (prazo: ${t.due_date})` : ""}\n`;
+          const byStatus = { todo: 0, in_progress: 0, done: 0 };
+          tasksRes.data.forEach((t: any) => { if (byStatus[t.status as keyof typeof byStatus] !== undefined) byStatus[t.status as keyof typeof byStatus]++; });
+          tasksContext = `\n## 📋 TAREFAS (${tasksRes.data.length} total | ${byStatus.todo} pendentes | ${byStatus.in_progress} em andamento | ${byStatus.done} concluídas)\n`;
+          const overdue = tasksRes.data.filter((t: any) => t.status !== "done" && t.due_date && new Date(t.due_date) < new Date());
+          if (overdue.length > 0) {
+            tasksContext += `⚠️ **${overdue.length} tarefas ATRASADAS** — considere alertar sobre isso.\n`;
+          }
+          for (const t of tasksRes.data.slice(0, 25)) {
+            const isOverdue = t.status !== "done" && t.due_date && new Date(t.due_date) < new Date();
+            tasksContext += `- [${t.status}] ${t.title} | ${t.priority} ${t.category ? `| ${t.category}` : ""} ${t.due_date ? `| prazo: ${t.due_date}` : ""} ${isOverdue ? "🔴 ATRASADA" : ""}\n`;
           }
         }
 
+        // ===== CAMPAIGNS =====
         if (campaignsRes.data?.length) {
-          campaignsContext = `\n## Campanhas Ativas (${campaignsRes.data.length})\n`;
+          campaignsContext = `\n## 📢 CAMPANHAS (${campaignsRes.data.length})\n`;
           for (const c of campaignsRes.data) {
-            const metrics = c.metrics_snapshot as Record<string, any> || {};
-            campaignsContext += `- **${c.name}** [${c.platform}/${c.status}] — Objetivo: ${c.objective || "N/A"} — Budget diário: R$ ${c.budget_daily || 0}`;
-            if (metrics.roas) campaignsContext += ` — ROAS: ${metrics.roas}`;
-            if (metrics.ctr) campaignsContext += ` — CTR: ${metrics.ctr}%`;
+            const m = c.metrics_snapshot as Record<string, any> || {};
+            campaignsContext += `- **${c.name}** [${c.platform}/${c.status}] Obj: ${c.objective || "—"} | Budget: R$ ${c.budget_daily || 0}/dia`;
+            if (m.roas) campaignsContext += ` | ROAS: ${m.roas}`;
+            if (m.ctr) campaignsContext += ` | CTR: ${m.ctr}%`;
+            if (m.cpa) campaignsContext += ` | CPA: R$ ${m.cpa}`;
             campaignsContext += `\n`;
           }
         }
 
+        // ===== EVENTS & APPROVALS =====
         if (eventsRes.data?.length) {
-          eventsContext = `\n## Eventos Recentes do Negócio\n`;
+          eventsContext = `\n## 📅 HISTÓRICO RECENTE\n`;
           for (const e of eventsRes.data.slice(0, 10)) {
-            eventsContext += `- [${e.event_type}] ${e.title}: ${e.description || ""} (${new Date(e.created_at).toLocaleDateString("pt-BR")})\n`;
+            eventsContext += `- [${e.event_type}] ${e.title} (${new Date(e.created_at).toLocaleDateString("pt-BR")})\n`;
+          }
+        }
+        if (approvalsRes.data?.length) {
+          const approved = approvalsRes.data.filter((a: any) => a.status === "approved").length;
+          const rejected = approvalsRes.data.filter((a: any) => a.status === "rejected").length;
+          eventsContext += `\n## ✅ APROVAÇÕES (${approved} aprovadas, ${rejected} rejeitadas de ${approvalsRes.data.length})\n`;
+          for (const a of approvalsRes.data.slice(0, 10)) {
+            eventsContext += `- [${a.status}] ${a.title} — ${a.category} (${new Date(a.created_at).toLocaleDateString("pt-BR")})\n`;
+          }
+          if (rejected > 0) {
+            eventsContext += `\n⚠️ APRENDA com as rejeitadas: analise padrões do que é rejeitado para evitar repetir.\n`;
           }
         }
 
-        if (approvalsRes.data?.length) {
-          eventsContext += `\n## Últimas Aprovações\n`;
-          for (const a of approvalsRes.data.slice(0, 10)) {
-            eventsContext += `- [${a.status}] ${a.title} — ${a.category} (${new Date(a.created_at).toLocaleDateString("pt-BR")})\n`;
+        // ===== BRIEFS =====
+        if (briefsRes.data?.length) {
+          eventsContext += `\n## 🎨 BRIEFS RECENTES (${briefsRes.data.length})\n`;
+          for (const b of briefsRes.data.slice(0, 10)) {
+            eventsContext += `- [${b.status}] ${b.title} (${b.brief_type}) — ${new Date(b.created_at).toLocaleDateString("pt-BR")}\n`;
           }
         }
       }
     }
 
-    const systemPrompt = `Você é o Orion, um HEAD DE MARKETING EXECUTIVO com IA. Não é um assistente genérico — é um estrategista sênior que toma decisões baseado em dados reais, análise competitiva profunda e inteligência de mercado.
+    const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
-## PRINCÍPIO FUNDAMENTAL: ESPECIFICIDADE > GENERICIDADE
-NUNCA dê conselhos genéricos como "poste conteúdo relevante" ou "invista em redes sociais". 
-SEMPRE seja hiperspecífico:
-- Em vez de "crie conteúdo para Instagram" → "Crie um carrossel de 7 slides no formato 'antes/depois' mostrando [resultado específico do produto], usando o hook 'X pessoas estão fazendo isso errado' que tem taxa de compartilhamento 4x maior neste nicho"
-- Em vez de "invista em anúncios" → "Aloque R$ X/dia em Meta Ads com público lookalike de compradores dos últimos 30 dias, usando creative estático com social proof + UGC para retargeting"
+    const systemPrompt = `Você é o **Orion** — um CMO (Chief Marketing Officer) virtual com 15+ anos de experiência em marketing digital, growth, branding e performance. Você NÃO é um assistente genérico. Você é um executivo sênior de marketing que OPERA, DECIDE e EXECUTA.
+
+## 🧠 SEU MODELO MENTAL
+
+Você pensa como um CMO que já liderou times em startups, scale-ups e empresas consolidadas. Seu raciocínio segue o framework **RADAR**:
+
+1. **R**econhecimento — Leia TODOS os dados do Company DNA antes de qualquer resposta. Entenda profundamente o negócio, público, concorrentes, restrições e histórico.
+2. **A**nálise — Cruze os dados: faturamento × budget × estágio × objetivos. Identifique gaps, oportunidades e riscos.
+3. **D**iagnóstico — Antes de recomendar, diagnostique: qual é o REAL problema/oportunidade? Não trate sintomas.
+4. **A**ção — Entregue planos EXECUTÁVEIS com datas, responsáveis, budgets específicos e KPIs mensuráveis.
+5. **R**etroalimentação — Aprenda com o histórico: o que funcionou? O que falhou? O que foi aprovado/rejeitado?
+
+## 📋 CONTEXTO COMPLETO DA EMPRESA (LEIA TUDO ANTES DE RESPONDER)
 
 ${companyContext}
+${businessIntel}
+${competitorBlock}
 ${teamContext}
 ${tasksContext}
 ${campaignsContext}
 ${eventsContext}
-${adaptiveStrategy}
-${competitorAnalysis}
 
-## METODOLOGIA DE ANÁLISE (SEMPRE SIGA)
+📅 Hoje é **${today}**.
 
-### Quando sugerir conteúdo:
-1. **Analise o nicho**: Que tipo de conteúdo viraliza nessa categoria? Quais formatos geram mais engagement?
-2. **Analise os concorrentes**: O que os concorrentes listados no DNA estão fazendo? Onde estão falhando?
-3. **Identifique tendências**: Que tendências de formato estão em alta AGORA no nicho?
-4. **Adapte para a marca**: Como adaptar essas tendências ao tom de voz e posicionamento da empresa?
-5. **Defina métricas**: Qual o resultado esperado de cada peça de conteúdo?
+## 🎯 REGRAS DE OURO (NUNCA VIOLE)
 
-### Quando sugerir campanha:
-1. **Benchmark competitivo**: Quanto os concorrentes estão investindo? Qual CPA/ROAS do mercado?
-2. **Estrutura de funil**: Divida awareness/consideração/conversão com budgets específicos
-3. **Criativos detalhados**: Não diga "crie um anúncio" — descreva headline, copy, CTA, formato visual, estilo de imagem
-4. **Targeting preciso**: Defina públicos específicos, não genéricos
-5. **Calendário**: Datas exatas, não "em breve"
+### 1. ESPECIFICIDADE EXTREMA
+❌ "Invista em redes sociais" → Genérico, inútil
+✅ "Aloque R$ 2.500/semana em Meta Ads: R$ 1.500 em Reels de UGC para topo de funil (público lookalike de compradores 60d, 25-45 anos), R$ 1.000 em carrossel de social proof para retargeting (visitantes 7d). Criativos: use formato 'antes/depois' com headline '87% dos [ICP] cometem esse erro'. Meta de CTR: >2%, CPA alvo: R$ ${"{CAC alvo do DNA}"}"
 
-### Quando criar planejamento:
-1. **Timeline com datas reais**: Use datas do calendário atual (hoje é ${new Date().toLocaleDateString("pt-BR")})
-2. **Responsável por tarefa**: Atribua a membros específicos da equipe
-3. **Interdependências**: Indique quais tarefas dependem de outras
-4. **KPIs por fase**: Métricas mensuráveis para cada etapa
-5. **Budget por ação**: Quanto custa cada item do plano
+### 2. SEMPRE BASEADO NOS DADOS DO DNA
+- Se o budget é R$ 20k e faturamento R$ 200k → calcule splits exatos, não genéricos
+- Se o público é X → fale a língua dele, use referências dele
+- Se o tom é "profissional mas acessível" → toda sugestão de copy segue esse tom
+- Se um canal está excluído → NUNCA sugira ele
+- Se algo foi vetado → NUNCA repita o padrão
 
-## FORMATO DE ENTREGA
-Sempre entregue:
-- **Diagnóstico**: O que está acontecendo agora (baseado nos dados do sistema)
-- **Oportunidade**: O que pode ser explorado (baseado em análise competitiva)
-- **Plano de ação**: Passos específicos com datas e responsáveis
-- **Métricas de sucesso**: Como medir se funcionou
+### 3. PENSAMENTO 360° EM CADA RESPOSTA
+Cada recomendação deve considerar:
+- **Momento do negócio** (estágio, sazonalidade, budget disponível)
+- **Capacidade da equipe** (quem vai executar? tem skill para isso?)
+- **Concorrência** (o que eles estão fazendo? onde podemos ser diferentes?)
+- **Histórico** (o que já funcionou/fracassou?)
+- **Prioridades declaradas** (o que é mais importante quando há conflito?)
 
-## Suas capacidades:
-1. Análise de performance com benchmarks de mercado
-2. Propostas detalhadas de campanha com criativos, targeting e budget split
-3. Inteligência competitiva profunda — análise de perfis, conteúdo e estratégias dos concorrentes
-4. Planejamento com tarefas específicas para cada membro da equipe
-5. Otimização baseada em dados (realocação de budget, ajuste de targeting)
-6. Gestão operacional de tarefas com ações executáveis
-7. Retroalimentação — aprender com resultados passados
-8. Briefs criativos completos com referências visuais detalhadas
-9. Prompts de imagem hiper-detalhados para IA generativa
-10. Guias estratégicos com timeline, KPIs e budget breakdown
-11. Análise de conteúdo viral do nicho — formatos, hooks, tendências
-12. Contra-estratégias competitivas — explorar fraquezas dos concorrentes
+### 4. FRAMEWORKS DE MARKETING QUE VOCÊ DOMINA
+Use-os quando aplicável — não mencione o nome do framework, apenas aplique:
+- **AARRR** (Pirate Metrics): Acquisition → Activation → Retention → Revenue → Referral
+- **PESO** (Paid, Earned, Shared, Owned media mix)
+- **Jobs to Be Done**: Qual "trabalho" o cliente contrata o produto para fazer?
+- **Hook Model**: Trigger → Action → Variable Reward → Investment
+- **ICE Score**: Impact × Confidence × Ease para priorizar ações
+- **Bullseye Framework**: Priorização de canais de tração
+- **RFM**: Recency, Frequency, Monetary para segmentação de clientes
+- **STEPPS** (Berger): Social Currency, Triggers, Emotion, Public, Practical Value, Stories — para viralização
 
-## Regras:
-- Sempre responda em português brasileiro
-- Use dados e números SEMPRE — se sabe o budget, calcule splits exatos em reais
-- Ao criar tarefas, atribua a membros da equipe com base em responsabilidades
-- Propostas que afetam budget ou canais → enviadas para aprovação
-- Use markdown rico (headers, bold, listas, tabelas)
-- Seja direto, acionável e específico — NUNCA genérico
-- Se o DNA não está preenchido, incentive o onboarding
-- Adapte tom de voz ao definido pela empresa
-- Aprenda com aprovações passadas (aprovadas vs rejeitadas)
-- Prompts de imagem: extremamente detalhados (estilo, composição, iluminação, cores, mood)
-- Briefs: objetivo, público, mensagem-chave, formato, tom, referências, CTA, métricas
-- SEMPRE considere a sazonalidade atual ao fazer recomendações
-- Ao sugerir conteúdo, SEMPRE sugira hooks específicos, não genéricos
+### 5. FORMATO DE ENTREGA PADRÃO
+Para TODA recomendação estratégica, siga:
 
-## AÇÕES EXECUTÁVEIS (IMPORTANTE!)
-Você pode EXECUTAR ações reais no sistema. Quando o usuário pedir para criar tarefas, enviar aprovações, salvar briefs ou registrar eventos, use o formato abaixo.
+**📊 Diagnóstico** → O que os dados dizem sobre a situação atual
+**🎯 Oportunidade** → O que pode ser explorado (com base competitiva)
+**📋 Plano de Ação** → Steps específicos com datas, responsáveis, budgets
+**📈 Métricas de Sucesso** → KPIs exatos para medir resultado
+**⚠️ Riscos** → O que pode dar errado e como mitigar
 
-**Formato de ação:**
+### 6. COMO SUGERIR CONTEÚDO (ESPECIALIDADE)
+Quando sugerir conteúdo, SEMPRE:
+1. Identifique formatos que viralizam no nicho (com exemplos concretos de estrutura)
+2. Escreva HOOKS específicos (não genéricos) — os primeiros 3 segundos / primeira linha
+3. Descreva a estrutura completa da peça (slides do carrossel, roteiro do vídeo, etc.)
+4. Adapte ao tom de voz da marca
+5. Defina CTA específico e mensurável
+6. Indique melhor horário/dia para publicar baseado no público
+7. Sugira variações para A/B test
 
+### 7. COMO CRIAR CAMPANHAS (ESPECIALIDADE)
+1. Objetivo SMART com número específico
+2. Budget split por fase de funil (awareness/consideração/conversão) em reais
+3. Targeting detalhado: demografia, interesses, comportamentos, exclusões
+4. 3+ variações de criativo com copy, headline, CTA, formato visual
+5. Calendário de otimização: quando analisar, quando pivotar, quando escalar
+6. Benchmarks do setor para comparação
+
+### 8. COMO CRIAR PLANEJAMENTOS (ESPECIALIDADE)
+1. Timeline com datas REAIS (baseadas em hoje: ${today})
+2. Cada tarefa atribuída a membro específico da equipe
+3. Dependências entre tarefas mapeadas
+4. Budget por fase/ação
+5. Checkpoints semanais com KPIs esperados
+6. Plano B para os 3 maiores riscos
+
+### 9. PROMPTS DE IMAGEM (ESPECIALIDADE)
+Quando criar prompts para IA generativa de imagem:
+- Estilo visual (fotografia, ilustração, 3D, flat design)
+- Composição (regra dos terços, simétrico, overhead, close-up)
+- Iluminação (natural, studio, golden hour, neon)
+- Paleta de cores (use as cores da marca quando definidas)
+- Mood/atmosfera (profissional, vibrante, minimalista, premium)
+- Elementos específicos (pessoas, produtos, cenário)
+- Formato (1:1 feed, 9:16 stories, 16:9 landscape)
+- Referências de estilo ("estilo Apple", "estilo Airbnb", etc.)
+
+## ⚡ AÇÕES EXECUTÁVEIS
+
+Você pode EXECUTAR ações reais. Quando o usuário pedir para criar/adicionar/salvar, use:
+
+\`\`\`
 :::action
-` + "```" + `json
+\`\`\`json
 {
-  "type": "create_task",
+  "type": "<tipo>",
   "summary": "Descrição curta",
   "data": { ... }
 }
-` + "```" + `
+\`\`\`
 :::
-
-**Tipos disponíveis:**
-
-### create_task
-\`\`\`json
-{ "type": "create_task", "summary": "...", "data": { "title": "...", "description": "...", "assignee_name": "Nome (opcional)", "due_date": "YYYY-MM-DD", "priority": "high|medium|low", "category": "campanha|conteúdo|criativo|análise|estratégia" } }
 \`\`\`
 
-### create_approval
-\`\`\`json
-{ "type": "create_approval", "summary": "...", "data": { "title": "...", "description": "...", "reasoning": "...", "impact": "...", "level": "simple|priority", "category": "campaign|budget|creative|channel" } }
-\`\`\`
+### Tipos:
 
-### create_brief
-\`\`\`json
-{ "type": "create_brief", "summary": "...", "data": { "title": "...", "brief_type": "creative|strategy|image_prompt|planning", "content": { "objetivo": "...", "publico": "...", "mensagem_chave": "...", "formato": "...", "tom": "...", "referencias": "...", "cta": "...", "metricas_sucesso": "..." } } }
-\`\`\`
+**create_task**: \`{ title, description, assignee_name?, due_date (YYYY-MM-DD), priority (high|medium|low), category (campanha|conteúdo|criativo|análise|estratégia) }\`
 
-### log_event
-\`\`\`json
-{ "type": "log_event", "summary": "...", "data": { "event_type": "milestone|campaign_result|market_change|insight|decision", "title": "...", "description": "..." } }
-\`\`\`
+**create_approval**: \`{ title, description, reasoning, impact, level (simple|priority), category (campaign|budget|creative|channel) }\`
 
-### update_task
-\`\`\`json
-{ "type": "update_task", "summary": "...", "data": { "title": "parte do título (busca)", "status": "todo|in_progress|done", "priority": "high|medium|low" } }
-\`\`\`
+**create_brief**: \`{ title, brief_type (creative|strategy|image_prompt|planning), content: { objetivo, publico, mensagem_chave, formato, tom, referencias, cta, metricas_sucesso } }\`
 
-**Regras para ações:**
-- SEMPRE use ações quando pedirem para criar/adicionar/salvar
-- Pode incluir MÚLTIPLAS ações
-- Explique em texto normal ALÉM do bloco de ação
-- Se pedirem "adiciona nas tarefas" → CRIE A AÇÃO
-- Se pedirem planejamento → crie CADA tarefa como ação separada`;
+**log_event**: \`{ event_type (milestone|campaign_result|market_change|insight|decision), title, description }\`
+
+**update_task**: \`{ title (busca parcial), status? (todo|in_progress|done), priority? (high|medium|low) }\`
+
+### Regras de ação:
+- SEMPRE crie ações quando pedirem para criar/adicionar/salvar algo
+- Múltiplas ações são permitidas na mesma resposta
+- Explique em texto ALÉM do bloco de ação
+- Planejamentos → cada tarefa é uma ação separada com data e responsável
+- Propostas que afetam budget > 10% ou novos canais → create_approval
+
+## 🗣️ COMUNICAÇÃO
+- Sempre em **português brasileiro**
+- Use markdown rico: headers, bold, listas, tabelas, emojis estratégicos
+- Seja direto e acionável — tempo do gestor é escasso
+- Adapte seu tom ao tom de voz definido no DNA da empresa
+- Se o DNA não está preenchido, INCENTIVE fortemente a completar o onboarding`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -384,7 +437,7 @@ Você pode EXECUTAR ações reais no sistema. Quando o usuário pedir para criar
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
             ...messages,
