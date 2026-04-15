@@ -1,176 +1,221 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { cn } from "@/lib/utils";
-import { Eye, BarChart3, Copy, Sparkles } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Plus, Sparkles, FileText, Palette, Target, BookOpen } from "lucide-react";
+import { BriefCard, BriefDetail } from "@/components/studio/BriefCard";
+import { BriefForm } from "@/components/studio/BriefForm";
 
-interface Creative {
+interface Brief {
   id: string;
-  name: string;
-  type: "image" | "video" | "copy";
-  campaign: string;
-  status: "draft" | "approved" | "live";
-  ctr?: string;
-  impressions?: string;
-  hypothesis: string;
-  variations: string[];
+  title: string;
+  brief_type: string;
+  status: string;
+  content: Record<string, any>;
+  campaign_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-const MOCK_CREATIVES: Creative[] = [
-  {
-    id: "1",
-    name: "Hero Banner — Produto X",
-    type: "image",
-    campaign: "Lançamento Produto X",
-    status: "live",
-    ctr: "3.4%",
-    impressions: "124K",
-    hypothesis: "Imagens com pessoas reais usando o produto convertem 2x mais que product shots isolados neste segmento.",
-    variations: [
-      "Versão A: Pessoa usando produto em escritório — CTR 3.4%",
-      "Versão B: Product shot minimalista — CTR 1.8%",
-      "Versão C: Antes/depois — CTR 2.9%",
-    ],
-  },
-  {
-    id: "2",
-    name: "Vídeo curto — Retargeting",
-    type: "video",
-    campaign: "Retargeting Carrinho",
-    status: "live",
-    ctr: "4.1%",
-    impressions: "89K",
-    hypothesis: "Vídeos de 15s com depoimento geram maior urgência que slides estáticos para retargeting.",
-    variations: [
-      "Versão A: Depoimento 15s — CTR 4.1%",
-      "Versão B: Demo animado 30s — CTR 2.2%",
-    ],
-  },
-  {
-    id: "3",
-    name: "Copy — Headlines para Search",
-    type: "copy",
-    campaign: "Geração de Leads B2B",
-    status: "approved",
-    hypothesis: "Headlines focadas em resultado temporal ('em 7 dias') performam melhor que desconto para B2B.",
-    variations: [
-      "'Resultados em 7 dias ou devolvemos seu dinheiro'",
-      "'A plataforma que 500+ empresas usam para crescer'",
-      "'Reduza seu CAC em 40% — veja como'",
-    ],
-  },
-  {
-    id: "4",
-    name: "Carrossel — Brand Awareness",
-    type: "image",
-    campaign: "Brand Awareness Q2",
-    status: "draft",
-    hypothesis: "Carrosséis educativos geram mais saves e shares do que posts promocionais para awareness.",
-    variations: [
-      "5 slides educativos sobre o mercado",
-      "3 slides com cases de sucesso",
-    ],
-  },
-];
-
-const statusMap = {
-  draft: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
-  approved: { label: "Aprovado", className: "bg-orion-warning/15 text-orion-warning" },
-  live: { label: "No ar", className: "bg-orion-success/15 text-orion-success" },
+const emptyForm = {
+  title: "", brief_type: "creative", objetivo: "", publico: "",
+  mensagem_chave: "", formato: "", tom: "", referencias: "", cta: "", metricas_sucesso: "",
 };
 
-const typeEmoji = { image: "🖼", video: "🎬", copy: "✍️" };
-
 const Studio = () => {
-  const [selected, setSelected] = useState<string>(MOCK_CREATIVES[0].id);
-  const selectedCreative = MOCK_CREATIVES.find((c) => c.id === selected)!;
+  const { user } = useAuth();
+  const [briefs, setBriefs] = useState<Brief[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [form, setForm] = useState(emptyForm);
+
+  const fetchBriefs = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("creative_briefs")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (data) {
+      setBriefs(data.map(b => ({ ...b, content: (b.content as Record<string, any>) || {} })));
+      if (!selected && data.length > 0) setSelected(data[0].id);
+    }
+    if (error) console.error(error);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchBriefs(); }, [user]);
+
+  // Realtime
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("briefs-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "creative_briefs", filter: `user_id=eq.${user.id}` },
+        () => fetchBriefs()
+      ).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  const handleCreate = async () => {
+    if (!user || !form.title.trim()) { toast.error("Título é obrigatório"); return; }
+    const content: Record<string, string> = {};
+    if (form.objetivo) content.objetivo = form.objetivo;
+    if (form.publico) content.publico = form.publico;
+    if (form.mensagem_chave) content.mensagem_chave = form.mensagem_chave;
+    if (form.formato) content.formato = form.formato;
+    if (form.tom) content.tom = form.tom;
+    if (form.referencias) content.referencias = form.referencias;
+    if (form.cta) content.cta = form.cta;
+    if (form.metricas_sucesso) content.metricas_sucesso = form.metricas_sucesso;
+
+    const { error } = await supabase.from("creative_briefs").insert({
+      user_id: user.id,
+      title: form.title,
+      brief_type: form.brief_type,
+      content: content as any,
+    });
+    if (error) toast.error("Erro ao criar brief");
+    else {
+      toast.success("Brief criado!");
+      setShowForm(false);
+      setForm(emptyForm);
+    }
+  };
+
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("creative_briefs").update({ status }).eq("id", id);
+    if (error) toast.error("Erro ao atualizar status");
+  };
+
+  const filtered = filter === "all" ? briefs : briefs.filter(b => b.brief_type === filter);
+  const selectedBrief = briefs.find(b => b.id === selected);
+
+  const typeCounts = {
+    all: briefs.length,
+    creative: briefs.filter(b => b.brief_type === "creative").length,
+    strategy: briefs.filter(b => b.brief_type === "strategy").length,
+    image_prompt: briefs.filter(b => b.brief_type === "image_prompt").length,
+    planning: briefs.filter(b => b.brief_type === "planning").length,
+  };
+
+  if (loading) {
+    return <AppLayout><div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 rounded-lg orion-gradient animate-pulse-glow" /></div></AppLayout>;
+  }
 
   return (
     <AppLayout>
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-display text-foreground">Estúdio Criativo</h1>
-          <p className="text-sm text-muted-foreground">Criativos gerados pelo Orion com hipóteses e performance</p>
-        </div>
-
-        <div className="grid grid-cols-4 gap-4">
-          {MOCK_CREATIVES.map((creative) => {
-            const status = statusMap[creative.status];
-            return (
-              <button
-                key={creative.id}
-                onClick={() => setSelected(creative.id)}
-                className={cn(
-                  "bg-card border rounded-xl p-4 text-left transition-all space-y-3",
-                  selected === creative.id ? "border-primary orion-glow" : "border-border hover:border-muted-foreground/30"
-                )}
-              >
-                {/* Preview placeholder */}
-                <div className="aspect-video bg-orion-surface-2 rounded-lg flex items-center justify-center text-2xl">
-                  {typeEmoji[creative.type]}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded", status.className)}>
-                      {status.label}
-                    </span>
-                  </div>
-                  <p className="text-sm text-foreground font-medium truncate">{creative.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{creative.campaign}</p>
-                </div>
-                {creative.ctr && (
-                  <div className="flex gap-3 text-xs">
-                    <span className="text-orion-teal font-mono">CTR {creative.ctr}</span>
-                    <span className="text-muted-foreground font-mono">{creative.impressions} imp.</span>
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Detail Panel */}
-        <div className="bg-card border border-border rounded-xl p-6 space-y-5 animate-fade-in">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-heading text-foreground">{selectedCreative.name}</h2>
-              <p className="text-xs text-muted-foreground">{selectedCreative.campaign}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="border-border text-muted-foreground">
-                <Eye className="w-3.5 h-3.5 mr-1.5" /> Preview
-              </Button>
-              <Button variant="outline" size="sm" className="border-border text-muted-foreground">
-                <Copy className="w-3.5 h-3.5 mr-1.5" /> Duplicar
-              </Button>
-            </div>
-          </div>
-
-          {/* AI Hypothesis */}
-          <div className="bg-primary/5 border border-primary/10 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-orion-violet-light" />
-              <span className="text-xs text-orion-violet-light font-medium">Hipótese do Orion</span>
-            </div>
-            <p className="text-sm text-foreground leading-relaxed">{selectedCreative.hypothesis}</p>
-          </div>
-
-          {/* Variations */}
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm text-foreground font-medium mb-3 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-orion-teal" />
-              Variações {selectedCreative.variations.length > 0 && `(${selectedCreative.variations.length})`}
-            </h3>
-            <div className="space-y-2">
-              {selectedCreative.variations.map((v, i) => (
-                <div key={i} className="flex items-center gap-3 bg-orion-surface-2 rounded-lg px-4 py-3">
-                  <span className="text-xs text-muted-foreground font-mono w-6">{String.fromCharCode(65 + i)}</span>
-                  <span className="text-sm text-foreground flex-1">{v}</span>
-                </div>
+            <h1 className="text-display text-foreground">Estúdio Criativo</h1>
+            <p className="text-sm text-muted-foreground">Briefs criativos, guias estratégicos e prompts gerados pelo Orion</p>
+          </div>
+          <Button onClick={() => setShowForm(true)} className="orion-gradient text-primary-foreground gap-2">
+            <Plus className="w-4 h-4" /> Novo brief
+          </Button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: "Total", value: typeCounts.all, icon: FileText, color: "text-foreground" },
+            { label: "Criativos", value: typeCounts.creative, icon: Palette, color: "text-orion-coral" },
+            { label: "Estratégicos", value: typeCounts.strategy, icon: Target, color: "text-orion-teal" },
+            { label: "Prompts", value: typeCounts.image_prompt, icon: Sparkles, color: "text-orion-violet-light" },
+            { label: "Planejamentos", value: typeCounts.planning, icon: BookOpen, color: "text-orion-info" },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <div key={label} className="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
+              <Icon className={cn("w-4 h-4", color)} />
+              <div>
+                <p className="text-lg font-semibold text-foreground">{value}</p>
+                <p className="text-[10px] text-muted-foreground">{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-2 border-b border-border pb-3">
+          {([
+            { key: "all", label: "Todos" },
+            { key: "creative", label: "Criativos" },
+            { key: "strategy", label: "Estratégicos" },
+            { key: "image_prompt", label: "Prompts" },
+            { key: "planning", label: "Planejamentos" },
+          ]).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={cn(
+                "px-4 py-2 rounded-lg text-xs font-medium transition-colors",
+                filter === key
+                  ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+              )}
+            >
+              {label} ({typeCounts[key as keyof typeof typeCounts]})
+            </button>
+          ))}
+        </div>
+
+        {/* Form */}
+        {showForm && (
+          <BriefForm
+            form={form}
+            onFormChange={setForm}
+            onSubmit={handleCreate}
+            onCancel={() => setShowForm(false)}
+          />
+        )}
+
+        {/* Content */}
+        {filtered.length === 0 ? (
+          <div className="bg-card border border-border rounded-xl p-12 text-center">
+            <Palette className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-heading text-foreground mb-2">Nenhum brief ainda</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+              Crie briefs manualmente ou peça ao Orion no chat: "Crie um brief criativo para uma campanha de Instagram Reels".
+            </p>
+            <Button variant="outline" onClick={() => setShowForm(true)} className="border-border gap-2">
+              <Plus className="w-4 h-4" /> Criar primeiro brief
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Brief grid */}
+            <div className="lg:col-span-1 space-y-3 max-h-[60vh] overflow-auto pr-1">
+              {filtered.map((brief) => (
+                <BriefCard
+                  key={brief.id}
+                  brief={brief}
+                  isSelected={selected === brief.id}
+                  onSelect={() => setSelected(brief.id)}
+                />
               ))}
             </div>
+
+            {/* Detail panel */}
+            <div className="lg:col-span-2">
+              {selectedBrief ? (
+                <BriefDetail
+                  brief={selectedBrief}
+                  onStatusChange={updateStatus}
+                />
+              ) : (
+                <div className="bg-card border border-border rounded-xl p-12 text-center">
+                  <p className="text-sm text-muted-foreground">Selecione um brief para ver os detalhes</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </AppLayout>
   );
