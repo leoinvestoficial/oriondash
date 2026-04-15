@@ -103,12 +103,11 @@ export async function executeAction(action: OrionAction, userId: string, company
       }
 
       case "update_task": {
-        const updates: Record<string, any> = {};
+        const updates: { status?: string; priority?: string; due_date?: string } = {};
         if (action.data.status) updates.status = action.data.status;
         if (action.data.priority) updates.priority = action.data.priority;
         if (action.data.due_date) updates.due_date = action.data.due_date;
 
-        // Find task by title match if no ID
         if (action.data.task_id) {
           const { error } = await supabase.from("tasks").update(updates).eq("id", action.data.task_id);
           if (error) throw error;
