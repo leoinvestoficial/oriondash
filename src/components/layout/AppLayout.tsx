@@ -13,6 +13,7 @@ import {
   LogOut,
   Users,
   ListTodo,
+  Plug,
 } from "lucide-react";
 
 const NAV_ITEMS = [
