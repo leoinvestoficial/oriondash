@@ -10,24 +10,18 @@ const corsHeaders = {
 const PLATFORM_CONFIG: Record<string, {
   authUrl: string;
   scopes: string;
-  clientIdEnv: string;
-  extraParams?: Record<string, string>;
 }> = {
   meta_ads: {
     authUrl: "https://www.facebook.com/v19.0/dialog/oauth",
     scopes: "ads_management,ads_read,read_insights,business_management",
-    clientIdEnv: "META_ADS_CLIENT_ID",
   },
   google_ads: {
     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
     scopes: "https://www.googleapis.com/auth/adwords",
-    clientIdEnv: "GOOGLE_ADS_CLIENT_ID",
-    extraParams: { access_type: "offline", prompt: "consent" },
   },
   tiktok_ads: {
     authUrl: "https://business-api.tiktok.com/portal/auth",
     scopes: "",
-    clientIdEnv: "TIKTOK_ADS_APP_ID",
   },
 };
 
@@ -40,7 +34,7 @@ serve(async (req) => {
     const { platform, redirectUri } = await req.json();
 
     if (!platform || !PLATFORM_CONFIG[platform]) {
-      return new Response(JSON.stringify({ error: "Platform inválida" }), {
+      return new Response(JSON.stringify({ error: "Plataforma inválida" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -68,14 +62,23 @@ serve(async (req) => {
       });
     }
 
-    const config = PLATFORM_CONFIG[platform];
-    const clientId = Deno.env.get(config.clientIdEnv);
-    if (!clientId) {
-      return new Response(JSON.stringify({ error: `Credenciais de ${platform} não configuradas. Configure ${config.clientIdEnv} nas secrets.` }), {
-        status: 500,
+    // Load credentials from oauth_credentials table (per-user)
+    const { data: creds, error: credsError } = await supabase
+      .from("oauth_credentials")
+      .select("client_id, client_secret, extra_config")
+      .eq("user_id", user.id)
+      .eq("platform", platform)
+      .maybeSingle();
+
+    if (credsError || !creds) {
+      return new Response(JSON.stringify({ error: `Credenciais de ${platform} não configuradas. Acesse Integrações para configurar.` }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const clientId = creds.client_id;
+    const config = PLATFORM_CONFIG[platform];
 
     // Create state token with user ID for security
     const state = btoa(JSON.stringify({ userId: user.id, platform, ts: Date.now() }));
