@@ -23,6 +23,7 @@ serve(async (req) => {
     let teamContext = "";
     let tasksContext = "";
     let eventsContext = "";
+    let campaignsContext = "";
 
     if (authHeader) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
