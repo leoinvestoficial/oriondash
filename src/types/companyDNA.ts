@@ -47,10 +47,11 @@ export interface CompanyDNA {
 
 export interface OnboardingStep {
   id: string;
-  block: keyof CompanyDNA;
+  block: keyof CompanyDNA | "brandAssets";
   title: string;
   subtitle: string;
   icon: string;
+  isCustom?: boolean;
   questions: {
     key: string;
     label: string;
@@ -60,6 +61,15 @@ export interface OnboardingStep {
 }
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
+  {
+    id: "brandAssets",
+    block: "brandAssets",
+    title: "Marca & Visual",
+    subtitle: "Envie o logo, favicon e defina as cores da sua marca.",
+    icon: "🎨",
+    isCustom: true,
+    questions: [],
+  },
   {
     id: "identity",
     block: "identity",
