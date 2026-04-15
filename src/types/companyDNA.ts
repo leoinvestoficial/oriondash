@@ -47,7 +47,7 @@ export interface CompanyDNA {
 
 export interface OnboardingStep {
   id: string;
-  block: keyof CompanyDNA | "brandAssets";
+  block: keyof CompanyDNA | "brandAssets" | "businessContext";
   title: string;
   subtitle: string;
   icon: string;
