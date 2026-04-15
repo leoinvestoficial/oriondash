@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { cn } from "@/lib/utils";
-import { Check, X, Edit3, Sparkles, Clock, AlertTriangle, DollarSign } from "lucide-react";
+import { Check, X, Edit3, Sparkles, Clock, AlertTriangle, DollarSign, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-type ApprovalLevel = "simple" | "priority";
-type ApprovalStatus = "pending" | "approved" | "rejected";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface ApprovalItem {
   id: string;
@@ -13,77 +13,94 @@ interface ApprovalItem {
   description: string;
   reasoning: string;
   impact: string;
-  level: ApprovalLevel;
+  level: string;
   category: string;
-  data: string[];
-  status: ApprovalStatus;
-  createdAt: string;
+  supporting_data: string[];
+  status: string;
+  created_at: string;
 }
 
-const MOCK_APPROVALS: ApprovalItem[] = [
-  {
-    id: "1",
-    title: "Realocar 15% do budget de TikTok para Google Search",
-    description: "Com base na performance dos últimos 14 dias, o ROAS do Google Search está 82% acima do TikTok. A realocação pode gerar R$ 4.200 adicionais em conversão.",
-    reasoning: "O CPC do TikTok subiu 34% sem melhora em conversão. Google Search mantém CPC estável com taxa de conversão crescente.",
-    impact: "Budget: R$ 915/dia movidos. Impacto estimado: +0.4x ROAS geral.",
-    level: "priority",
-    category: "Budget",
-    data: ["ROAS Google: 5.1x", "ROAS TikTok: 2.8x", "CPC TikTok: +34%"],
-    status: "pending",
-    createdAt: "Há 23 min",
-  },
-  {
-    id: "2",
-    title: "Publicar nova campanha de retargeting para abandono de carrinho",
-    description: "O Orion criou 4 variações de criativo e configurou público de retargeting com janela de 7 dias.",
-    reasoning: "42% dos visitantes adicionam ao carrinho mas não finalizam. A taxa de recuperação atual é 8% — benchmark do setor é 15%.",
-    impact: "Exposição pública: campanha vai ao ar no Meta Ads. Budget: R$ 2.100/semana.",
-    level: "priority",
-    category: "Campanha",
-    data: ["Abandono: 42%", "Recuperação atual: 8%", "Meta: 15%"],
-    status: "pending",
-    createdAt: "Há 1h",
-  },
-  {
-    id: "3",
-    title: "Ajustar horário de publicação do LinkedIn para 8h–10h",
-    description: "Análise de engajamento mostra que posts entre 8h e 10h têm 3.2x mais interações do que o horário atual (14h).",
-    reasoning: "O público B2B está mais ativo no começo do dia. Dados de 45 dias confirmam o padrão.",
-    impact: "Baixo impacto financeiro. Mudança de schedule apenas.",
-    level: "simple",
-    category: "Otimização",
-    data: ["Engajamento 8h-10h: 3.2x", "Dados: 45 dias"],
-    status: "pending",
-    createdAt: "Há 2h",
-  },
-  {
-    id: "4",
-    title: "A/B test: headline 'Economize 40%' vs 'Resultados em 7 dias'",
-    description: "Teste em 10% do tráfego da campanha principal no Meta para validar qual abordagem ressoa melhor.",
-    reasoning: "Dados históricos mostram que o público responde mais a benefício temporal do que a desconto. Hipótese a validar.",
-    impact: "Baixo risco. Escala de 10% do tráfego por 72h.",
-    level: "simple",
-    category: "Teste A/B",
-    data: ["Tráfego: 10%", "Duração: 72h"],
-    status: "pending",
-    createdAt: "Há 3h",
-  },
-];
-
 const Approvals = () => {
-  const [items, setItems] = useState(MOCK_APPROVALS);
-  const [selected, setSelected] = useState<string | null>(MOCK_APPROVALS[0].id);
+  const { user } = useAuth();
+  const [items, setItems] = useState<ApprovalItem[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleAction = (id: string, action: ApprovalStatus) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: action } : item))
-    );
+  const fetchApprovals = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("approvals")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) { console.error(error); }
+    else {
+      const mapped = (data || []).map((item) => ({
+        ...item,
+        supporting_data: (item.supporting_data as any) || [],
+      }));
+      setItems(mapped);
+      if (mapped.length > 0 && !selected) setSelected(mapped[0].id);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchApprovals(); }, [user]);
+
+  const handleAction = async (id: string, action: string) => {
+    const { error } = await supabase
+      .from("approvals")
+      .update({ status: action, resolved_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) { toast.error("Erro ao atualizar aprovação"); }
+    else {
+      toast.success(action === "approved" ? "Aprovada!" : "Rejeitada.");
+      await fetchApprovals();
+    }
   };
 
   const pending = items.filter((i) => i.status === "pending");
   const resolved = items.filter((i) => i.status !== "pending");
   const selectedItem = items.find((i) => i.id === selected);
+
+  const formatDate = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `Há ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `Há ${hours}h`;
+    return `Há ${Math.floor(hours / 24)} dias`;
+  };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="w-8 h-8 rounded-lg orion-gradient animate-pulse-glow" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Empty state
+  if (items.length === 0) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
+          <div className="w-16 h-16 rounded-2xl bg-orion-surface-2 flex items-center justify-center mb-6">
+            <Inbox className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h1 className="text-display text-foreground mb-3">Nenhuma aprovação pendente</h1>
+          <p className="text-muted-foreground max-w-md">
+            Quando o Orion identificar oportunidades ou precisar de autorização para agir, 
+            as propostas aparecerão aqui para sua revisão.
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -116,7 +133,7 @@ const Approvals = () => {
                     )}>
                       {item.level === "priority" ? "Prioritária" : "Simples"}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">{item.createdAt}</span>
+                    <span className="text-[10px] text-muted-foreground">{formatDate(item.created_at)}</span>
                   </div>
                   <p className="text-sm text-foreground line-clamp-2">{item.title}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">{item.category}</p>
@@ -155,7 +172,6 @@ const Approvals = () => {
         <div className="flex-1 overflow-auto">
           {selectedItem ? (
             <div className="p-6 max-w-2xl space-y-6 animate-fade-in">
-              {/* Header */}
               <div className="flex items-start gap-3">
                 <div className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
@@ -175,16 +191,14 @@ const Approvals = () => {
                     Aprovação {selectedItem.level === "priority" ? "prioritária" : "simples"}
                   </span>
                   <h2 className="text-heading text-foreground mt-1">{selectedItem.title}</h2>
-                  <p className="text-xs text-muted-foreground">{selectedItem.category} · {selectedItem.createdAt}</p>
+                  <p className="text-xs text-muted-foreground">{selectedItem.category} · {formatDate(selectedItem.created_at)}</p>
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+              <div className="bg-card border border-border rounded-xl p-4">
                 <p className="text-sm text-foreground leading-relaxed">{selectedItem.description}</p>
               </div>
 
-              {/* AI Reasoning */}
               <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-orion-violet-light" />
@@ -193,7 +207,6 @@ const Approvals = () => {
                 <p className="text-sm text-foreground leading-relaxed">{selectedItem.reasoning}</p>
               </div>
 
-              {/* Impact */}
               <div className="bg-orion-surface-2 rounded-xl p-4 flex items-start gap-3">
                 <DollarSign className="w-4 h-4 text-orion-amber mt-0.5" />
                 <div>
@@ -202,16 +215,16 @@ const Approvals = () => {
                 </div>
               </div>
 
-              {/* Supporting Data */}
-              <div className="flex gap-2 flex-wrap">
-                {selectedItem.data.map((d, i) => (
-                  <span key={i} className="text-xs bg-muted px-3 py-1.5 rounded-lg text-muted-foreground font-mono">
-                    {d}
-                  </span>
-                ))}
-              </div>
+              {selectedItem.supporting_data.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {selectedItem.supporting_data.map((d: string, i: number) => (
+                    <span key={i} className="text-xs bg-muted px-3 py-1.5 rounded-lg text-muted-foreground font-mono">
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              )}
 
-              {/* Actions */}
               {selectedItem.status === "pending" && (
                 <div className="flex items-center gap-3 pt-4 border-t border-border">
                   <Button
@@ -220,17 +233,7 @@ const Approvals = () => {
                   >
                     <Check className="w-4 h-4 mr-2" /> Aprovar
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="border-border text-muted-foreground"
-                  >
-                    <Edit3 className="w-4 h-4 mr-2" /> Editar proposta
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleAction(selectedItem.id, "rejected")}
-                    className="text-destructive hover:text-destructive"
-                  >
+                  <Button variant="ghost" onClick={() => handleAction(selectedItem.id, "rejected")} className="text-destructive hover:text-destructive">
                     <X className="w-4 h-4 mr-2" /> Rejeitar
                   </Button>
                 </div>
