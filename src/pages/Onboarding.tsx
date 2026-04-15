@@ -97,6 +97,14 @@ const Onboarding = () => {
             onBack={handleBack}
           />
         )}
+        {step && step.isCustom && step.id === "businessContext" && (
+          <BusinessContextStep
+            data={getStepData(step.block)}
+            onUpdate={(key, value) => updateField(step.block, key, value)}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
         {step && !step.isCustom && (
           <OnboardingStepView
             step={step}
