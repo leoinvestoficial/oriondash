@@ -6,6 +6,7 @@ import { OnboardingStepView } from "@/components/onboarding/OnboardingStepView";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingComplete } from "@/components/onboarding/OnboardingComplete";
 import { BrandAssetsStep } from "@/components/onboarding/BrandAssetsStep";
+import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 
 const Onboarding = () => {

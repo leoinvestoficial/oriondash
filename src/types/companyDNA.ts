@@ -71,6 +71,15 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     questions: [],
   },
   {
+    id: "businessContext",
+    block: "businessContext",
+    title: "Números & Estratégia",
+    subtitle: "Faturamento, budget e estágio do negócio para o Orion se adaptar.",
+    icon: "📈",
+    isCustom: true,
+    questions: [],
+  },
+  {
     id: "identity",
     block: "identity",
     title: "Identidade da Marca",
