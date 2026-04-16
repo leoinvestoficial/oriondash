@@ -332,6 +332,74 @@ export type Database = {
         }
         Relationships: []
       }
+      content_calendar: {
+        Row: {
+          ai_generated: boolean
+          campaign_id: string | null
+          channel: string
+          content_type: string
+          copy_text: string | null
+          created_at: string
+          cta: string | null
+          hashtags: string | null
+          id: string
+          notes: string | null
+          scheduled_date: string
+          scheduled_time: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          visual_description: string | null
+        }
+        Insert: {
+          ai_generated?: boolean
+          campaign_id?: string | null
+          channel?: string
+          content_type?: string
+          copy_text?: string | null
+          created_at?: string
+          cta?: string | null
+          hashtags?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          visual_description?: string | null
+        }
+        Update: {
+          ai_generated?: boolean
+          campaign_id?: string | null
+          channel?: string
+          content_type?: string
+          copy_text?: string | null
+          created_at?: string
+          cta?: string | null
+          hashtags?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          visual_description?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_calendar_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creative_briefs: {
         Row: {
           brief_type: string
