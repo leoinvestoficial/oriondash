@@ -13,6 +13,8 @@ import Team from "./pages/Team";
 import Tasks from "./pages/Tasks";
 import Integrations from "./pages/Integrations";
 import OAuthCallback from "./pages/OAuthCallback";
+import Campaigns from "./pages/Campaigns";
+import ContentCalendar from "./pages/ContentCalendar";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +43,8 @@ const AppRoutes = () => (
     <Route path="/" element={<Navigate to="/dashboard" replace />} />
     <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+    <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+    <Route path="/calendar" element={<ProtectedRoute><ContentCalendar /></ProtectedRoute>} />
     <Route path="/approvals" element={<ProtectedRoute><Approvals /></ProtectedRoute>} />
     <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
     <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
@@ -52,7 +56,6 @@ const AppRoutes = () => (
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
