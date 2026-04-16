@@ -38,7 +38,7 @@ interface Campaign {
 }
 
 const channelOptions = [
-  { value: "instagram", label: "Instagram", icon: Instagram },
+  { value: "instagram", label: "Instagram", icon: Image },
   { value: "facebook", label: "Facebook", icon: Globe },
   { value: "tiktok", label: "TikTok", icon: Video },
   { value: "linkedin", label: "LinkedIn", icon: Globe },
