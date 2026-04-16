@@ -15,17 +15,20 @@ import {
   Users,
   ListTodo,
   Plug,
+  Megaphone,
+  CalendarDays,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/campaigns", label: "Campanhas", icon: Megaphone },
+  { path: "/calendar", label: "Cronograma", icon: CalendarDays },
   { path: "/tasks", label: "Tarefas", icon: ListTodo },
   { path: "/approvals", label: "Aprovações", icon: CheckCircle2, badge: 3 },
   { path: "/studio", label: "Estúdio", icon: Palette },
   { path: "/chat", label: "Chat", icon: MessageSquare },
   { path: "/team", label: "Equipe", icon: Users },
 ];
-
 const BOTTOM_ITEMS = [
   { path: "/integrations", label: "Integrações", icon: Plug },
   { path: "/onboarding", label: "Company DNA", icon: Brain },
