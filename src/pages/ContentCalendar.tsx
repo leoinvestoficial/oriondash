@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { useSearchParams } from "react-router-dom";
 import {
   Plus, ChevronLeft, ChevronRight, Calendar as CalIcon,
-  Instagram, Globe, Mail, Sparkles, X, Image, Video, FileText, Mic
+  Globe, Mail, Sparkles, X, Image, Video, FileText, Mic
 } from "lucide-react";
 
 interface ContentItem {
