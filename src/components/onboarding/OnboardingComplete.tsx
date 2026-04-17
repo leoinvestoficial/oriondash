@@ -35,12 +35,16 @@ export const OnboardingComplete = ({ data }: OnboardingCompleteProps) => {
       {/* DNA Summary */}
       <div className="grid grid-cols-2 gap-3 mb-10 max-w-md mx-auto text-left">
         {[
+          { icon: "🎨", label: "Marca & Visual", block: "brandAssets" },
+          { icon: "📈", label: "Estratégia", block: "businessContext" },
+          { icon: "💰", label: "Economics", block: "economics" },
+          { icon: "📊", label: "Funil", block: "funnelSnapshot" },
+          { icon: "🎯", label: "Posicionamento", block: "positioning" },
           { icon: "✦", label: "Identidade", block: "identity" },
           { icon: "◎", label: "Mercado", block: "market" },
           { icon: "◇", label: "Público", block: "audience" },
           { icon: "△", label: "Objetivos", block: "objectives" },
           { icon: "⬡", label: "Restrições", block: "constraints" },
-          { icon: "◈", label: "Histórico", block: "history" },
         ].map((item) => {
           const blockData = data[item.block] || {};
           const filled = Object.values(blockData).filter((v) => v?.trim()).length;
@@ -50,8 +54,8 @@ export const OnboardingComplete = ({ data }: OnboardingCompleteProps) => {
               className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
             >
               <span className="text-lg">{item.icon}</span>
-              <div>
-                <p className="text-sm text-foreground">{item.label}</p>
+              <div className="min-w-0">
+                <p className="text-sm text-foreground truncate">{item.label}</p>
                 <p className="text-xs text-muted-foreground">{filled} campos</p>
               </div>
               {filled > 0 && (
@@ -62,7 +66,7 @@ export const OnboardingComplete = ({ data }: OnboardingCompleteProps) => {
         })}
       </div>
 
-      <div className="flex gap-3 justify-center">
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Button
           variant="outline"
           onClick={() => navigate("/")}
@@ -72,14 +76,14 @@ export const OnboardingComplete = ({ data }: OnboardingCompleteProps) => {
         </Button>
         <Button
           className="orion-gradient text-primary-foreground px-6 orion-glow hover:opacity-90 transition-opacity"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/diagnostico")}
         >
-          Começar a usar o Orion →
+          Gerar Diagnóstico Inicial →
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground mt-6">
-        O Company DNA é um documento vivo — o Orion o atualiza continuamente com base em feedback, performance e novos dados.
+      <p className="text-xs text-muted-foreground mt-6 max-w-md mx-auto">
+        Próximo passo: o Orion analisa tudo isso e devolve um Score 0-100, semáforo por área e top gargalos. (Fase 2)
       </p>
     </div>
   );
