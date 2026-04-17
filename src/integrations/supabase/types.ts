@@ -148,6 +148,83 @@ export type Database = {
           },
         ]
       }
+      business_metrics: {
+        Row: {
+          avg_margin_pct: number | null
+          avg_roas: number | null
+          avg_ticket: number | null
+          cac_current: number | null
+          company_dna_id: string | null
+          conversion_rate_pct: number | null
+          created_at: string
+          current_tools: string | null
+          id: string
+          ltv_estimated: number | null
+          monthly_revenue: number | null
+          monthly_traffic: number | null
+          notes: string | null
+          payback_months: number | null
+          perceived_bottlenecks: string | null
+          snapshot_date: string
+          source: string
+          team_size: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_margin_pct?: number | null
+          avg_roas?: number | null
+          avg_ticket?: number | null
+          cac_current?: number | null
+          company_dna_id?: string | null
+          conversion_rate_pct?: number | null
+          created_at?: string
+          current_tools?: string | null
+          id?: string
+          ltv_estimated?: number | null
+          monthly_revenue?: number | null
+          monthly_traffic?: number | null
+          notes?: string | null
+          payback_months?: number | null
+          perceived_bottlenecks?: string | null
+          snapshot_date?: string
+          source?: string
+          team_size?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_margin_pct?: number | null
+          avg_roas?: number | null
+          avg_ticket?: number | null
+          cac_current?: number | null
+          company_dna_id?: string | null
+          conversion_rate_pct?: number | null
+          created_at?: string
+          current_tools?: string | null
+          id?: string
+          ltv_estimated?: number | null
+          monthly_revenue?: number | null
+          monthly_traffic?: number | null
+          notes?: string | null
+          payback_months?: number | null
+          perceived_bottlenecks?: string | null
+          snapshot_date?: string
+          source?: string
+          team_size?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_metrics_company_dna_id_fkey"
+            columns: ["company_dna_id"]
+            isOneToOne: false
+            referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_metrics: {
         Row: {
           campaign_id: string
@@ -440,6 +517,59 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creative_uploads: {
+        Row: {
+          asset_kind: string
+          company_dna_id: string | null
+          copy_text: string | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_type: string
+          id: string
+          notes: string | null
+          performance_label: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_kind?: string
+          company_dna_id?: string | null
+          copy_text?: string | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_type: string
+          id?: string
+          notes?: string | null
+          performance_label?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_kind?: string
+          company_dna_id?: string | null
+          copy_text?: string | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          notes?: string | null
+          performance_label?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_uploads_company_dna_id_fkey"
+            columns: ["company_dna_id"]
+            isOneToOne: false
+            referencedRelation: "company_dna"
             referencedColumns: ["id"]
           },
         ]

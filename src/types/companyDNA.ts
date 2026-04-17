@@ -45,9 +45,11 @@ export interface CompanyDNA {
   };
 }
 
+export type CustomStepBlock = "brandAssets" | "businessContext" | "economics" | "funnelSnapshot" | "creativesUpload" | "positioning";
+
 export interface OnboardingStep {
   id: string;
-  block: keyof CompanyDNA | "brandAssets" | "businessContext";
+  block: keyof CompanyDNA | CustomStepBlock;
   title: string;
   subtitle: string;
   icon: string;
@@ -76,6 +78,42 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "Números & Estratégia",
     subtitle: "Faturamento, budget e estágio do negócio para o Orion se adaptar.",
     icon: "📈",
+    isCustom: true,
+    questions: [],
+  },
+  {
+    id: "economics",
+    block: "economics",
+    title: "Unit Economics",
+    subtitle: "Ticket, margem, CAC e LTV — a base de todo diagnóstico real.",
+    icon: "💰",
+    isCustom: true,
+    questions: [],
+  },
+  {
+    id: "funnelSnapshot",
+    block: "funnelSnapshot",
+    title: "Funil Atual",
+    subtitle: "Snapshot do estado atual: tráfego, conversão, ROAS e gargalos percebidos.",
+    icon: "📊",
+    isCustom: true,
+    questions: [],
+  },
+  {
+    id: "creativesUpload",
+    block: "creativesUpload",
+    title: "Criativos Atuais",
+    subtitle: "Envie anúncios em uso — campeões, fracassados e em rotação.",
+    icon: "🎬",
+    isCustom: true,
+    questions: [],
+  },
+  {
+    id: "positioning",
+    block: "positioning",
+    title: "Posicionamento & Objetivo",
+    subtitle: "Tier de mercado, objetivo principal e concorrentes diretos.",
+    icon: "🎯",
     isCustom: true,
     questions: [],
   },
