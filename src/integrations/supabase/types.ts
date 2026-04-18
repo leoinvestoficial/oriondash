@@ -574,6 +574,69 @@ export type Database = {
           },
         ]
       }
+      diagnostics: {
+        Row: {
+          area_scores: Json
+          bottlenecks: Json
+          business_metrics_id: string | null
+          company_dna_id: string | null
+          created_at: string
+          executive_summary: string
+          id: string
+          model_used: string
+          raw_response: Json
+          recommendations: Json
+          score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area_scores?: Json
+          bottlenecks?: Json
+          business_metrics_id?: string | null
+          company_dna_id?: string | null
+          created_at?: string
+          executive_summary?: string
+          id?: string
+          model_used?: string
+          raw_response?: Json
+          recommendations?: Json
+          score: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area_scores?: Json
+          bottlenecks?: Json
+          business_metrics_id?: string | null
+          company_dna_id?: string | null
+          created_at?: string
+          executive_summary?: string
+          id?: string
+          model_used?: string
+          raw_response?: Json
+          recommendations?: Json
+          score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diagnostics_business_metrics_id_fkey"
+            columns: ["business_metrics_id"]
+            isOneToOne: false
+            referencedRelation: "business_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diagnostics_company_dna_id_fkey"
+            columns: ["company_dna_id"]
+            isOneToOne: false
+            referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oauth_credentials: {
         Row: {
           client_id: string
