@@ -56,6 +56,78 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_decisions: {
+        Row: {
+          action_type: string
+          applied_at: string | null
+          campaign_id: string | null
+          created_at: string
+          diagnostic_id: string | null
+          evidence: string
+          expected_impact: string
+          id: string
+          payload: Json
+          rationale: string
+          result: Json
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          applied_at?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          diagnostic_id?: string | null
+          evidence?: string
+          expected_impact?: string
+          id?: string
+          payload?: Json
+          rationale: string
+          result?: Json
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          applied_at?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          diagnostic_id?: string | null
+          evidence?: string
+          expected_impact?: string
+          id?: string
+          payload?: Json
+          rationale?: string
+          result?: Json
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_decisions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_decisions_diagnostic_id_fkey"
+            columns: ["diagnostic_id"]
+            isOneToOne: false
+            referencedRelation: "diagnostics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approvals: {
         Row: {
           category: string
@@ -633,6 +705,56 @@ export type Database = {
             columns: ["company_dna_id"]
             isOneToOne: false
             referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metrics_alerts: {
+        Row: {
+          acknowledged: boolean
+          campaign_id: string | null
+          created_at: string
+          current_value: number | null
+          delta_pct: number | null
+          id: string
+          message: string
+          metric: string
+          previous_value: number | null
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          campaign_id?: string | null
+          created_at?: string
+          current_value?: number | null
+          delta_pct?: number | null
+          id?: string
+          message: string
+          metric: string
+          previous_value?: number | null
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          acknowledged?: boolean
+          campaign_id?: string | null
+          created_at?: string
+          current_value?: number | null
+          delta_pct?: number | null
+          id?: string
+          message?: string
+          metric?: string
+          previous_value?: number | null
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metrics_alerts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
