@@ -37,7 +37,7 @@ serve(async (req) => {
       const { data: { user } } = await supabase.auth.getUser(token);
 
       if (user) {
-        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes, campaignsRes, briefsRes] = await Promise.all([
+        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes, campaignsRes, briefsRes, memoryRes] = await Promise.all([
           supabase.from("company_dna").select("*").eq("user_id", user.id).maybeSingle(),
           supabase.from("team_members").select("*").eq("user_id", user.id).order("created_at"),
           supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
@@ -45,6 +45,7 @@ serve(async (req) => {
           supabase.from("approvals").select("title, status, category, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
           supabase.from("campaigns").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
           supabase.from("creative_briefs").select("title, brief_type, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+          supabase.from("business_memory").select("memory_type, title, summary, tags, importance, occurred_at").eq("user_id", user.id).order("importance", { ascending: false }).order("occurred_at", { ascending: false }).limit(30),
         ]);
 
         const dna = dnaRes.data;
@@ -278,6 +279,16 @@ Quando o usuário pedir QUALQUER recomendação (conteúdo, campanha, estratégi
           for (const b of briefsRes.data.slice(0, 10)) {
             eventsContext += `- [${b.status}] ${b.title} (${b.brief_type}) — ${new Date(b.created_at).toLocaleDateString("pt-BR")}\n`;
           }
+        }
+
+        // ===== CÉREBRO CONTÍNUO (SSOT) =====
+        if (memoryRes.data?.length) {
+          eventsContext += `\n## 🧠 CÉREBRO CONTÍNUO — memórias de alta importância (${memoryRes.data.length})\n`;
+          eventsContext += `Use estas memórias como contexto vivo. São coisas que o cliente despejou ao longo do tempo: conversas, métricas, decisões passadas, eventos do negócio, anotações.\n`;
+          for (const m of memoryRes.data) {
+            eventsContext += `- [${m.memory_type} ★${m.importance}] ${m.title} — ${m.summary || ""} ${m.tags?.length ? `(tags: ${m.tags.join(", ")})` : ""}\n`;
+          }
+          eventsContext += `\nReferencie essas memórias quando relevante. Conecte pontos: "lembro que você comentou X há 2 semanas, e agora Y aconteceu — isso confirma a hipótese Z".\n`;
         }
       }
     }
