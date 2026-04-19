@@ -220,6 +220,71 @@ export type Database = {
           },
         ]
       }
+      business_memory: {
+        Row: {
+          company_dna_id: string | null
+          content: string | null
+          created_at: string
+          id: string
+          importance: number
+          memory_type: string
+          occurred_at: string
+          raw_data: Json | null
+          reference_id: string | null
+          reference_table: string | null
+          source: string
+          summary: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_dna_id?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          importance?: number
+          memory_type: string
+          occurred_at?: string
+          raw_data?: Json | null
+          reference_id?: string | null
+          reference_table?: string | null
+          source?: string
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_dna_id?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          importance?: number
+          memory_type?: string
+          occurred_at?: string
+          raw_data?: Json | null
+          reference_id?: string | null
+          reference_table?: string | null
+          source?: string
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_memory_company_dna_id_fkey"
+            columns: ["company_dna_id"]
+            isOneToOne: false
+            referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_metrics: {
         Row: {
           avg_margin_pct: number | null
