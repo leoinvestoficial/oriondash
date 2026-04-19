@@ -39,7 +39,8 @@ function generateRow(profile: string, daysAgo: number) {
   const clicks = Math.round(impressions * (ctr / 100));
   const conversions = Math.max(0, Math.round(spend / cpa));
   const revenue = +(spend * roas).toFixed(2);
-  return { spend, impressions, clicks, conversions, revenue, ctr, cpc, cpa, roas };
+  // ctr, cpc, cpa, roas são colunas geradas pelo Postgres — não inserir
+  return { spend, impressions, clicks, conversions, revenue };
 }
 
 Deno.serve(async (req) => {
