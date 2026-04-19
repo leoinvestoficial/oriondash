@@ -10,6 +10,8 @@ import { useBrain } from "@/hooks/useBrain";
 import { Brain, Plus, Sparkles, Trash2, Loader2, MessageSquare, BarChart3, Target, FileText, StickyNote, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 const TYPE_ICONS: Record<string, any> = {
   chat: MessageSquare, metric: BarChart3, decision: Zap, diagnostic: Target,
@@ -55,6 +57,8 @@ export default function Cerebro() {
             </Button>
           </div>
         </div>
+
+        <PageHelpBanner content={PAGE_HELP.cerebro} />
 
         {(briefing || context) && (
           <Card className="p-5 border-primary/30 bg-primary/5">

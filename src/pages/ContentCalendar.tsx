@@ -13,6 +13,8 @@ import {
   Plus, ChevronLeft, ChevronRight, Calendar as CalIcon,
   Globe, Mail, Sparkles, X, Image, Video, FileText, Mic
 } from "lucide-react";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 interface ContentItem {
   id: string;
@@ -294,6 +296,8 @@ const ContentCalendar = () => {
             <Plus className="w-4 h-4" /> Novo conteúdo
           </Button>
         </div>
+
+        <PageHelpBanner content={PAGE_HELP.calendar} />
 
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

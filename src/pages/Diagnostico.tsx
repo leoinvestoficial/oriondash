@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, RefreshCw, AlertTriangle, TrendingUp, Lightbulb, Target, Megaphone, Palette, FileText, Tag, Filter } from "lucide-react";
 import { useDiagnostic, type AreaKey, type AreaStatus } from "@/hooks/useDiagnostic";
 import { useNavigate } from "react-router-dom";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 const AREA_META: Record<AreaKey, { label: string; icon: typeof Target }> = {
   trafego: { label: "Tráfego", icon: Megaphone },
@@ -99,6 +101,8 @@ const Diagnostico = () => {
             {latest ? "Regenerar diagnóstico" : "Gerar diagnóstico"}
           </Button>
         </div>
+
+        <PageHelpBanner content={PAGE_HELP.diagnostico} />
 
         {loading && (
           <Card className="p-8 bg-card border-border text-center">

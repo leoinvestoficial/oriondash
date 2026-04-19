@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Sparkles, Database, Check, X, TrendingUp, Pause, Palette, Users, DollarSign, ListTodo, FileText, Bell } from "lucide-react";
 import { useDecisions, type DecisionAction, type DecisionRecord } from "@/hooks/useDecisions";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 const ACTION_META: Record<DecisionAction, { label: string; icon: typeof Brain; tone: string }> = {
   scale_budget: { label: "Escalar orçamento", icon: TrendingUp, tone: "text-orion-success" },
@@ -140,6 +142,8 @@ const Decisoes = () => {
             </Button>
           </div>
         </div>
+
+        <PageHelpBanner content={PAGE_HELP.decisoes} />
 
         {executiveRead && (
           <Card className="p-5 bg-card border-orion-violet/30 mb-6">

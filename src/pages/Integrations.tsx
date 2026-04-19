@@ -177,6 +177,8 @@ const Integrations = () => {
           )}
         </div>
 
+        <PageHelpBanner content={PAGE_HELP.integrations} />
+
         <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-start gap-3">
           <Sparkles className="w-5 h-5 text-orion-violet-light shrink-0 mt-0.5" />
           <div>
