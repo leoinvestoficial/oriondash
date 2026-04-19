@@ -17,6 +17,7 @@ import Campaigns from "./pages/Campaigns";
 import ContentCalendar from "./pages/ContentCalendar";
 import Diagnostico from "./pages/Diagnostico";
 import Decisoes from "./pages/Decisoes";
+import Cerebro from "./pages/Cerebro";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -53,6 +54,7 @@ const AppRoutes = () => (
     <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
     <Route path="/diagnostico" element={<ProtectedRoute><Diagnostico /></ProtectedRoute>} />
     <Route path="/decisoes" element={<ProtectedRoute><Decisoes /></ProtectedRoute>} />
+    <Route path="/cerebro" element={<ProtectedRoute><Cerebro /></ProtectedRoute>} />
     <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
     <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
     <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
