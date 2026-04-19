@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Link2, Unlink, Sparkles, Shield, RefreshCw, Loader2, Settings } from "lucide-react";
 import { CredentialsDialog } from "@/components/integrations/CredentialsDialog";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 interface Integration {
   id: string;
