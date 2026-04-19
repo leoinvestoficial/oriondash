@@ -106,6 +106,9 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
         </div>
       </div>
 
+      <PageHelpBanner content={PAGE_HELP.dashboard} />
+      <OnboardingChecklist />
+
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link to="/campaigns" className="block">
