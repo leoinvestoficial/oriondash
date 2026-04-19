@@ -3,14 +3,15 @@ import orionLogo from "@/assets/orion-logo.png";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { startEmployeeTour, startOwnerTour } from "@/lib/tours";
 import {
   LayoutDashboard,
   CheckCircle2,
   Palette,
   MessageSquare,
-  Settings,
   Brain,
-  Bell,
   LogOut,
   Users,
   ListTodo,
@@ -20,24 +21,34 @@ import {
   Sparkles,
   Zap,
   BrainCircuit,
+  PlayCircle,
 } from "lucide-react";
 
-const NAV_ITEMS = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/cerebro", label: "Cérebro", icon: BrainCircuit },
-  { path: "/diagnostico", label: "Diagnóstico", icon: Sparkles },
-  { path: "/decisoes", label: "Decisões IA", icon: Zap },
-  { path: "/campaigns", label: "Campanhas", icon: Megaphone },
-  { path: "/calendar", label: "Cronograma", icon: CalendarDays },
-  { path: "/tasks", label: "Tarefas", icon: ListTodo },
-  { path: "/approvals", label: "Aprovações", icon: CheckCircle2, badge: 3 },
-  { path: "/studio", label: "Estúdio", icon: Palette },
-  { path: "/chat", label: "Chat", icon: MessageSquare },
-  { path: "/team", label: "Equipe", icon: Users },
+interface NavItem {
+  path: string;
+  label: string;
+  icon: any;
+  badge?: number;
+  ownerOnly?: boolean;
+  tour: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, tour: "dashboard" },
+  { path: "/cerebro", label: "Cérebro", icon: BrainCircuit, tour: "cerebro" },
+  { path: "/diagnostico", label: "Diagnóstico", icon: Sparkles, tour: "diagnostico", ownerOnly: true },
+  { path: "/decisoes", label: "Decisões IA", icon: Zap, tour: "decisoes", ownerOnly: true },
+  { path: "/campaigns", label: "Campanhas", icon: Megaphone, tour: "campaigns" },
+  { path: "/calendar", label: "Cronograma", icon: CalendarDays, tour: "calendar" },
+  { path: "/tasks", label: "Tarefas", icon: ListTodo, tour: "tasks" },
+  { path: "/approvals", label: "Aprovações", icon: CheckCircle2, badge: 3, tour: "approvals", ownerOnly: true },
+  { path: "/studio", label: "Estúdio", icon: Palette, tour: "studio" },
+  { path: "/chat", label: "Chat", icon: MessageSquare, tour: "chat" },
+  { path: "/team", label: "Equipe", icon: Users, tour: "team", ownerOnly: true },
 ];
-const BOTTOM_ITEMS = [
-  { path: "/integrations", label: "Integrações", icon: Plug },
-  { path: "/onboarding", label: "Company DNA", icon: Brain },
+const BOTTOM_ITEMS: NavItem[] = [
+  { path: "/integrations", label: "Integrações", icon: Plug, tour: "integrations", ownerOnly: true },
+  { path: "/onboarding", label: "Company DNA", icon: Brain, tour: "onboarding", ownerOnly: true },
 ];
 
 interface AppLayoutProps {
@@ -48,6 +59,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { isOwner, isAdmin } = useUserRole();
+  const { completeTour } = useUserPreferences();
+
+  const canSeeOwnerOnly = isOwner || isAdmin;
+  const visibleTop = NAV_ITEMS.filter((i) => !i.ownerOnly || canSeeOwnerOnly);
+  const visibleBottom = BOTTOM_ITEMS.filter((i) => !i.ownerOnly || canSeeOwnerOnly);
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuário";
   const initials = displayName
@@ -62,6 +79,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     navigate("/auth");
   };
 
+  const replayTour = () => {
+    if (canSeeOwnerOnly) startOwnerTour(() => completeTour());
+    else startEmployeeTour(() => completeTour());
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
@@ -70,12 +92,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {visibleTop.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
                 to={item.path}
+                data-tour={`nav-${item.tour}`}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group",
                   isActive
@@ -95,13 +118,14 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           })}
         </nav>
 
-        <div className="px-3 pb-4 space-y-1 border-t border-border pt-4">
-          {BOTTOM_ITEMS.map((item) => {
+        <div className="px-3 pb-2 space-y-1 border-t border-border pt-4">
+          {visibleBottom.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
                 to={item.path}
+                data-tour={`nav-${item.tour}`}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
                   isActive
@@ -114,6 +138,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               </Link>
             );
           })}
+          <button
+            onClick={replayTour}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-muted-foreground hover:text-foreground hover:bg-muted/30"
+          >
+            <PlayCircle className="w-4 h-4" />
+            <span>Refazer tour</span>
+          </button>
         </div>
 
         <div className="px-4 py-3 border-t border-border flex items-center gap-3">
