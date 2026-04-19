@@ -19,6 +19,7 @@ import Diagnostico from "./pages/Diagnostico";
 import Decisoes from "./pages/Decisoes";
 import Cerebro from "./pages/Cerebro";
 import Auth from "./pages/Auth";
+import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Navigate to="/dashboard" replace />} />
     <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+    <Route path="/invite" element={<AcceptInvite />} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
     <Route path="/calendar" element={<ProtectedRoute><ContentCalendar /></ProtectedRoute>} />

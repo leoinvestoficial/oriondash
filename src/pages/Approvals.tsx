@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { cn } from "@/lib/utils";
 import { Check, X, Edit3, Sparkles, Clock, AlertTriangle, DollarSign, Inbox } from "lucide-react";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -112,6 +114,9 @@ const Approvals = () => {
             <p className="text-xs text-muted-foreground mt-1">
               {pending.length} pendente{pending.length !== 1 ? "s" : ""}
             </p>
+            <div className="mt-3">
+              <PageHelpBanner content={PAGE_HELP.approvals} />
+            </div>
           </div>
 
           {pending.length > 0 && (

@@ -12,6 +12,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { TourLauncher } from "@/components/onboarding/TourLauncher";
+import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 const EmptyDashboard = ({ hasStartedOnboarding }: { hasStartedOnboarding: boolean }) => (
   <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
@@ -78,6 +82,7 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
 
   return (
     <div className="p-6 space-y-6">
+      <TourLauncher />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -100,6 +105,9 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
           )}
         </div>
       </div>
+
+      <PageHelpBanner content={PAGE_HELP.dashboard} />
+      <OnboardingChecklist />
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -13,6 +13,8 @@ import {
   ChevronRight, Sparkles, Play, Pause, Archive, Eye, Pencil, Trash2, X
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 interface Campaign {
   id: string;
@@ -364,6 +366,8 @@ const Campaigns = () => {
             <Plus className="w-4 h-4" /> Nova campanha
           </Button>
         </div>
+
+        <PageHelpBanner content={PAGE_HELP.campaigns} />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

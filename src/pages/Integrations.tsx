@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Link2, Unlink, Sparkles, Shield, RefreshCw, Loader2, Settings } from "lucide-react";
 import { CredentialsDialog } from "@/components/integrations/CredentialsDialog";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 interface Integration {
   id: string;
@@ -174,6 +176,8 @@ const Integrations = () => {
             </Button>
           )}
         </div>
+
+        <PageHelpBanner content={PAGE_HELP.integrations} />
 
         <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-start gap-3">
           <Sparkles className="w-5 h-5 text-orion-violet-light shrink-0 mt-0.5" />

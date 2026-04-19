@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { Plus, CheckCircle2, Clock, ListTodo, Sparkles, BarChart3 } from "lucide-react";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskForm } from "@/components/tasks/TaskForm";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 interface Task {
   id: string;
@@ -114,6 +116,8 @@ const Tasks = () => {
             <Plus className="w-4 h-4" /> Nova tarefa
           </Button>
         </div>
+
+        <PageHelpBanner content={PAGE_HELP.tasks} />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

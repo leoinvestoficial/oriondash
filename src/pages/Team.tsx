@@ -2,86 +2,91 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2, UserPlus, Users, Edit2, Save, X } from "lucide-react";
+import { Mail, Copy, Trash2, UserPlus, Users, Crown, Shield, User as UserIcon, Lock } from "lucide-react";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
-interface TeamMember {
+interface Invite {
   id: string;
-  name: string;
   email: string;
+  full_name: string | null;
   role: string;
-  department: string | null;
-  responsibilities: string | null;
+  status: string;
+  token: string;
+  expires_at: string;
+  created_at: string;
+}
+
+interface Member {
+  user_id: string;
+  role: string;
 }
 
 const Team = () => {
   const { user } = useAuth();
   const { dna, loading: dnaLoading } = useCompanyDNA();
-  const [members, setMembers] = useState<TeamMember[]>([]);
+  const { isOwner, loading: roleLoading } = useUserRole();
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [form, setForm] = useState({ email: "", full_name: "", role: "employee" });
+  const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", role: "", department: "", responsibilities: "" });
 
-  const fetchMembers = async () => {
+  const fetch = async () => {
     if (!dna) return;
-    const { data, error } = await supabase
-      .from("team_members")
-      .select("*")
-      .eq("company_dna_id", dna.id)
-      .order("created_at", { ascending: true });
-    if (!error && data) setMembers(data);
+    const [invRes, memRes] = await Promise.all([
+      supabase.from("company_invites").select("*").eq("company_dna_id", dna.id).order("created_at", { ascending: false }),
+      supabase.from("user_roles").select("user_id, role").eq("company_dna_id", dna.id),
+    ]);
+    if (invRes.data) setInvites(invRes.data as any);
+    if (memRes.data) setMembers(memRes.data as any);
     setLoading(false);
   };
 
-  useEffect(() => { if (dna) fetchMembers(); }, [dna]);
+  useEffect(() => { if (dna) fetch(); }, [dna]);
 
-  const handleSave = async () => {
-    if (!user || !dna || !form.name || !form.email) {
-      toast.error("Nome e email são obrigatórios");
+  const handleInvite = async () => {
+    if (!form.email || !user || !dna) {
+      toast.error("E-mail é obrigatório");
       return;
     }
-
-    if (editingId) {
-      const { error } = await supabase.from("team_members").update({
-        name: form.name, email: form.email, role: form.role,
-        department: form.department || null, responsibilities: form.responsibilities || null,
-      }).eq("id", editingId);
-      if (error) toast.error("Erro ao atualizar"); else toast.success("Membro atualizado!");
-    } else {
-      const { error } = await supabase.from("team_members").insert({
-        user_id: user.id, company_dna_id: dna.id,
-        name: form.name, email: form.email, role: form.role,
-        department: form.department || null, responsibilities: form.responsibilities || null,
-      });
-      if (error) toast.error("Erro ao adicionar"); else toast.success("Membro adicionado!");
-    }
-
-    setForm({ name: "", email: "", role: "", department: "", responsibilities: "" });
-    setShowForm(false);
-    setEditingId(null);
-    fetchMembers();
-  };
-
-  const handleEdit = (member: TeamMember) => {
-    setForm({
-      name: member.name, email: member.email, role: member.role,
-      department: member.department || "", responsibilities: member.responsibilities || "",
+    setSubmitting(true);
+    const { error } = await supabase.from("company_invites").insert({
+      company_dna_id: dna.id,
+      invited_by: user.id,
+      email: form.email,
+      full_name: form.full_name || null,
+      role: form.role as any,
     });
-    setEditingId(member.id);
-    setShowForm(true);
+    setSubmitting(false);
+    if (error) {
+      toast.error("Erro ao criar convite");
+      return;
+    }
+    toast.success("Convite criado! Copie o link e envie ao funcionário.");
+    setForm({ email: "", full_name: "", role: "employee" });
+    fetch();
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("team_members").delete().eq("id", id);
-    if (error) toast.error("Erro ao remover"); else { toast.success("Membro removido"); fetchMembers(); }
+  const copyLink = (token: string) => {
+    const url = `${window.location.origin}/invite?token=${token}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copiado!");
   };
 
-  if (dnaLoading || loading) {
+  const revoke = async (id: string) => {
+    await supabase.from("company_invites").update({ status: "revoked" }).eq("id", id);
+    toast.success("Convite revogado");
+    fetch();
+  };
+
+  if (dnaLoading || roleLoading || loading) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -91,109 +96,131 @@ const Team = () => {
     );
   }
 
-  return (
-    <AppLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-display text-foreground">Equipe</h1>
+  if (!isOwner) {
+    return (
+      <AppLayout>
+        <div className="p-6 max-w-2xl mx-auto">
+          <PageHelpBanner content={PAGE_HELP.team} />
+          <div className="bg-card border border-border rounded-xl p-12 text-center">
+            <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-heading text-foreground mb-2">Acesso restrito</h3>
             <p className="text-sm text-muted-foreground">
-              Cadastre os membros da equipe para o Orion distribuir tarefas contextualizadas
+              Apenas o dono do workspace pode gerenciar a equipe e enviar convites.
             </p>
           </div>
-          <Button onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: "", email: "", role: "", department: "", responsibilities: "" }); }}
-            className="orion-gradient text-primary-foreground gap-2">
-            <UserPlus className="w-4 h-4" /> Adicionar membro
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const roleIcon = (r: string) => r === "owner" ? <Crown className="w-3 h-3" /> : r === "admin" ? <Shield className="w-3 h-3" /> : <UserIcon className="w-3 h-3" />;
+
+  return (
+    <AppLayout>
+      <div className="p-6 space-y-6 max-w-5xl">
+        <div>
+          <h1 className="text-display text-foreground">Equipe</h1>
+          <p className="text-sm text-muted-foreground">Convide funcionários e gerencie acessos ao workspace</p>
+        </div>
+
+        <PageHelpBanner content={PAGE_HELP.team} />
+
+        {/* Convidar */}
+        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <UserPlus className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-medium text-foreground">Convidar funcionário</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <Input
+              placeholder="E-mail"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              className="bg-orion-surface-2 border-border md:col-span-2"
+            />
+            <Input
+              placeholder="Nome (opcional)"
+              value={form.full_name}
+              onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+              className="bg-orion-surface-2 border-border"
+            />
+            <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
+              <SelectTrigger className="bg-orion-surface-2 border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="employee">Funcionário</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handleInvite} disabled={submitting} className="orion-gradient text-primary-foreground gap-2">
+            <Mail className="w-4 h-4" /> Criar convite
           </Button>
         </div>
 
-        {/* Form */}
-        {showForm && (
-          <div className="bg-card border border-border rounded-xl p-6 space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <h3 className="text-heading text-foreground">{editingId ? "Editar membro" : "Novo membro"}</h3>
-              <Button variant="ghost" size="sm" onClick={() => { setShowForm(false); setEditingId(null); }}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Nome *</label>
-                <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="Nome completo" className="bg-orion-surface-2 border-border" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Email *</label>
-                <Input value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="email@empresa.com" className="bg-orion-surface-2 border-border" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Cargo</label>
-                <Input value={form.role} onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))}
-                  placeholder="Ex: Designer, Analista de Mídia..." className="bg-orion-surface-2 border-border" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Departamento</label>
-                <Input value={form.department} onChange={(e) => setForm(f => ({ ...f, department: e.target.value }))}
-                  placeholder="Ex: Marketing, Criação..." className="bg-orion-surface-2 border-border" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Responsabilidades no processo de marketing</label>
-              <Textarea value={form.responsibilities} onChange={(e) => setForm(f => ({ ...f, responsibilities: e.target.value }))}
-                placeholder="Descreva o que essa pessoa faz no processo..." rows={2}
-                className="bg-orion-surface-2 border-border resize-none" />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => { setShowForm(false); setEditingId(null); }} className="border-border">Cancelar</Button>
-              <Button onClick={handleSave} className="orion-gradient text-primary-foreground gap-2">
-                <Save className="w-4 h-4" /> {editingId ? "Salvar" : "Adicionar"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Members List */}
-        {members.length === 0 ? (
-          <div className="bg-card border border-border rounded-xl p-12 text-center">
-            <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-heading text-foreground mb-2">Nenhum membro cadastrado</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Cadastre os membros da sua equipe de marketing para que o Orion possa distribuir tarefas e planejamentos personalizados.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-3">
-            {members.map((member) => (
-              <div key={member.id} className="bg-card border border-border rounded-xl p-5 flex items-start gap-4 group hover:border-primary/30 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm text-primary font-medium shrink-0">
-                  {member.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-sm text-foreground font-medium">{member.name}</h4>
-                    {member.role && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{member.role}</span>
-                    )}
+        {/* Membros ativos */}
+        <div>
+          <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4" /> Membros ({members.length})
+          </h3>
+          <div className="grid gap-2">
+            {members.map((m) => (
+              <div key={m.user_id} className="bg-card border border-border rounded-lg p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs text-primary">
+                    {roleIcon(m.role)}
                   </div>
-                  <p className="text-xs text-muted-foreground">{member.email}</p>
-                  {member.department && <p className="text-xs text-muted-foreground mt-0.5">📂 {member.department}</p>}
-                  {member.responsibilities && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">💼 {member.responsibilities}</p>
-                  )}
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(member)} className="text-muted-foreground hover:text-foreground">
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(member.id)} className="text-muted-foreground hover:text-destructive">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                  <div>
+                    <p className="text-sm text-foreground">{m.user_id === user?.id ? "Você" : m.user_id.slice(0, 8)}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{m.role}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        )}
+        </div>
+
+        {/* Convites */}
+        <div>
+          <h3 className="text-sm font-medium text-foreground mb-3">Convites ({invites.length})</h3>
+          {invites.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-8 text-center text-sm text-muted-foreground">
+              Nenhum convite enviado ainda
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              {invites.map((inv) => (
+                <div key={inv.id} className="bg-card border border-border rounded-lg p-3 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-foreground truncate">{inv.email}</p>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                        inv.status === "pending" ? "bg-orion-amber/15 text-orion-amber" :
+                        inv.status === "accepted" ? "bg-orion-success/15 text-orion-success" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {inv.status === "pending" ? "Pendente" : inv.status === "accepted" ? "Aceito" : "Revogado"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground capitalize">{inv.role}</span>
+                    </div>
+                    {inv.full_name && <p className="text-xs text-muted-foreground">{inv.full_name}</p>}
+                  </div>
+                  {inv.status === "pending" && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => copyLink(inv.token)} className="border-border gap-1">
+                        <Copy className="w-3.5 h-3.5" /> Link
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => revoke(inv.id)} className="text-muted-foreground hover:text-destructive">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </AppLayout>
   );

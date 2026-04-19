@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { Plus, Sparkles, FileText, Palette, Target, BookOpen } from "lucide-react";
 import { BriefCard, BriefDetail } from "@/components/studio/BriefCard";
 import { BriefForm } from "@/components/studio/BriefForm";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 interface Brief {
   id: string;
@@ -121,6 +123,8 @@ const Studio = () => {
             <Plus className="w-4 h-4" /> Novo brief
           </Button>
         </div>
+
+        <PageHelpBanner content={PAGE_HELP.studio} />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

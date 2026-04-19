@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { PAGE_HELP } from "@/lib/pageHelp";
 
 const SUGGESTIONS = [
   { icon: BarChart3, text: "Monte um planejamento de marketing para os próximos 3 meses" },
@@ -139,6 +141,10 @@ const Chat = () => {
               <FileText className="w-3 h-3" /> Briefs
             </span>
           </div>
+        </div>
+
+        <div className="px-6 pt-4">
+          <PageHelpBanner content={PAGE_HELP.chat} />
         </div>
 
         {/* DNA Warning */}
