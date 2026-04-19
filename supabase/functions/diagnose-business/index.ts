@@ -278,6 +278,22 @@ Agora gere o diagnóstico completo via tool call \`generate_diagnostic\`.`;
       });
     }
 
+    // Auto-registra no Cérebro Contínuo (SSOT)
+    await supabase.from("business_memory").insert({
+      user_id: userId,
+      company_dna_id: dna.id,
+      memory_type: "diagnostic",
+      source: "ai",
+      title: `Diagnóstico — Score ${diagnostic.score}/100`,
+      summary: diagnostic.executive_summary?.slice(0, 400) ?? "",
+      content: `${diagnostic.executive_summary}\n\nGargalos:\n${(diagnostic.bottlenecks || []).map((b: any, i: number) => `${i + 1}. ${b.title || b.area || ""} — ${b.hypothesis || ""}`).join("\n")}`,
+      tags: ["diagnostico", `score-${Math.floor(diagnostic.score / 10) * 10}`, ...(Object.keys(diagnostic.area_scores || {}))],
+      importance: diagnostic.score < 50 ? 5 : diagnostic.score < 70 ? 4 : 3,
+      reference_table: "diagnostics",
+      reference_id: saved.id,
+      raw_data: { score: diagnostic.score, area_scores: diagnostic.area_scores },
+    });
+
     return new Response(JSON.stringify({ diagnostic: saved }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
