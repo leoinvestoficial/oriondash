@@ -19,10 +19,12 @@ import {
   CalendarDays,
   Sparkles,
   Zap,
+  BrainCircuit,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/cerebro", label: "Cérebro", icon: BrainCircuit },
   { path: "/diagnostico", label: "Diagnóstico", icon: Sparkles },
   { path: "/decisoes", label: "Decisões IA", icon: Zap },
   { path: "/campaigns", label: "Campanhas", icon: Megaphone },
