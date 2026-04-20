@@ -81,24 +81,24 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
   const formatCurrency = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <TourLauncher />
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             {companyName ? `${companyName} — ` : ""}Visão geral de marketing
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link to="/campaigns">
-            <Button variant="outline" size="sm" className="gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link to="/campaigns" className="flex-1 sm:flex-none">
+            <Button variant="outline" size="sm" className="gap-2 w-full sm:w-auto">
               <Plus className="w-3 h-3" /> Nova campanha
             </Button>
           </Link>
           {hasMetrics && (
-            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="gap-2">
+            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="gap-2 flex-1 sm:flex-none">
               {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Sincronizar
             </Button>
@@ -110,7 +110,7 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
       <OnboardingChecklist />
 
       {/* Quick actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link to="/campaigns" className="block">
           <div className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all">
             <div className="flex items-center gap-3 mb-3">
@@ -122,7 +122,7 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
                 <p className="text-[10px] text-muted-foreground">Campanhas</p>
               </div>
             </div>
-            <div className="flex gap-4 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span><span className="text-orion-success font-medium">{campaigns.active}</span> ativas</span>
               <span>R$ {campaigns.totalBudget.toLocaleString("pt-BR")} investidos</span>
             </div>
@@ -140,14 +140,14 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
                 <p className="text-[10px] text-muted-foreground">Conteúdos planejados</p>
               </div>
             </div>
-            <div className="flex gap-4 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span><span className="text-orion-info font-medium">{content.scheduled}</span> agendados</span>
               <span><span className="text-orion-warning font-medium">{content.thisWeek}</span> esta semana</span>
             </div>
           </div>
         </Link>
 
-        <Link to="/tasks" className="block">
+        <Link to="/tasks" className="block sm:col-span-2 lg:col-span-1">
           <div className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-lg bg-orion-coral/10 flex items-center justify-center">
@@ -158,7 +158,7 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
                 <p className="text-[10px] text-muted-foreground">Tarefas</p>
               </div>
             </div>
-            <div className="flex gap-4 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span><span className="text-muted-foreground font-medium">{tasks.todo}</span> a fazer</span>
               {tasks.overdue > 0 && <span className="text-orion-coral font-medium">{tasks.overdue} atrasadas</span>}
             </div>
@@ -169,15 +169,15 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
       {/* Metrics section — real or placeholder */}
       {hasMetrics && metrics ? (
         <>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <MetricCard label="Gasto total" value={formatCurrency(metrics.totalSpend)} />
             <MetricCard label="ROAS geral" value={metrics.overallRoas ? `${metrics.overallRoas.toFixed(2)}x` : "—"} />
             <MetricCard label="Conversões" value={metrics.totalConversions.toLocaleString("pt-BR")} />
             <MetricCard label="CPA médio" value={metrics.overallCpa ? formatCurrency(metrics.overallCpa) : "—"} />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
               <ChannelChart data={metrics.dailyData} byPlatform={metrics.byPlatform} />
             </div>
             <AlertsFeed metrics={metrics} />
@@ -186,7 +186,7 @@ const OperationalDashboard = ({ companyName, campaigns, content, tasks, metrics,
           <CampaignTable campaigns={metrics.campaignsList} />
         </>
       ) : (
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-card border border-border rounded-xl p-5 sm:p-6">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-lg bg-orion-surface-2 flex items-center justify-center shrink-0">
               <Sparkles className="w-5 h-5 text-orion-violet-light" />
