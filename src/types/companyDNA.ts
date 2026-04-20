@@ -45,7 +45,7 @@ export interface CompanyDNA {
   };
 }
 
-export type CustomStepBlock = "brandAssets" | "businessContext" | "economics" | "funnelSnapshot" | "creativesUpload" | "positioning";
+export type CustomStepBlock = "brandAssets" | "businessContext" | "economics" | "funnelSnapshot" | "creativesUpload" | "positioning" | "teamRoles";
 
 export interface OnboardingStep {
   id: string;
@@ -114,6 +114,15 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "Posicionamento & Objetivo",
     subtitle: "Tier de mercado, objetivo principal e concorrentes diretos.",
     icon: "🎯",
+    isCustom: true,
+    questions: [],
+  },
+  {
+    id: "teamRoles",
+    block: "teamRoles",
+    title: "Equipe & Cargos",
+    subtitle: "Cadastre os cargos do seu time de marketing pra atribuir tarefas e convites por função.",
+    icon: "👥",
     isCustom: true,
     questions: [],
   },
