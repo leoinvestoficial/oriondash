@@ -519,6 +519,7 @@ export type Database = {
           dna_data: Json
           id: string
           onboarding_completed: boolean
+          team_structure: Json
           updated_at: string
           user_id: string
         }
@@ -530,6 +531,7 @@ export type Database = {
           dna_data?: Json
           id?: string
           onboarding_completed?: boolean
+          team_structure?: Json
           updated_at?: string
           user_id: string
         }
@@ -541,6 +543,7 @@ export type Database = {
           dna_data?: Json
           id?: string
           onboarding_completed?: boolean
+          team_structure?: Json
           updated_at?: string
           user_id?: string
         }
@@ -557,6 +560,7 @@ export type Database = {
           full_name: string | null
           id: string
           invited_by: string
+          job_title_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: string
           token: string
@@ -571,6 +575,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           invited_by: string
+          job_title_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           token?: string
@@ -585,6 +590,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           invited_by?: string
+          job_title_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           token?: string
@@ -595,6 +601,13 @@ export type Database = {
             columns: ["company_dna_id"]
             isOneToOne: false
             referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_invites_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "role_definitions"
             referencedColumns: ["id"]
           },
         ]
@@ -937,6 +950,59 @@ export type Database = {
         }
         Relationships: []
       }
+      role_definitions: {
+        Row: {
+          area: string | null
+          company_dna_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          headcount: number
+          id: string
+          responsibilities: string | null
+          seniority: string | null
+          title: string
+          tools: string | null
+          updated_at: string
+        }
+        Insert: {
+          area?: string | null
+          company_dna_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          headcount?: number
+          id?: string
+          responsibilities?: string | null
+          seniority?: string | null
+          title: string
+          tools?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area?: string | null
+          company_dna_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          headcount?: number
+          id?: string
+          responsibilities?: string | null
+          seniority?: string | null
+          title?: string
+          tools?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_definitions_company_dna_id_fkey"
+            columns: ["company_dna_id"]
+            isOneToOne: false
+            referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           ai_context: string | null
@@ -1088,6 +1154,7 @@ export type Database = {
           company_dna_id: string | null
           created_at: string
           id: string
+          job_title_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
@@ -1095,6 +1162,7 @@ export type Database = {
           company_dna_id?: string | null
           created_at?: string
           id?: string
+          job_title_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
@@ -1102,6 +1170,7 @@ export type Database = {
           company_dna_id?: string | null
           created_at?: string
           id?: string
+          job_title_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -1111,6 +1180,13 @@ export type Database = {
             columns: ["company_dna_id"]
             isOneToOne: false
             referencedRelation: "company_dna"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "role_definitions"
             referencedColumns: ["id"]
           },
         ]

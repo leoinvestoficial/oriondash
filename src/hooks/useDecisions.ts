@@ -6,7 +6,33 @@ import { toast } from "sonner";
 export type DecisionStatus = "pending" | "applied" | "dismissed";
 export type DecisionAction =
   | "scale_budget" | "pause_campaign" | "refresh_creative" | "test_audience"
+  | "audience_split_test" | "creative_ab_test"
   | "adjust_bid" | "create_team_task" | "generate_brief" | "alert_only";
+
+export interface AudienceVariant {
+  name: string;
+  hypothesis: string;
+  targeting: string;
+  budget_share_pct?: number;
+}
+export interface CreativeVariant {
+  name: string;
+  format: string;
+  hook: string;
+  angle: string;
+  cta?: string;
+}
+export interface MetricsSnapshot {
+  spend?: number;
+  revenue?: number;
+  conversions?: number;
+  cpc?: number;
+  cpa?: number;
+  ctr?: number;
+  roas?: number;
+  roi_pct?: number;
+  [k: string]: any;
+}
 
 export interface DecisionRecord {
   id: string;
@@ -18,7 +44,13 @@ export interface DecisionRecord {
   severity: "alta" | "media" | "baixa";
   status: DecisionStatus;
   campaign_id: string | null;
-  payload: Record<string, any>;
+  payload: {
+    metrics_snapshot?: MetricsSnapshot;
+    audience_variants?: AudienceVariant[];
+    creative_variants?: CreativeVariant[];
+    task_steps?: string[];
+    [k: string]: any;
+  };
   result: Record<string, any>;
   created_at: string;
   applied_at: string | null;

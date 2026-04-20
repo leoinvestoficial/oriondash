@@ -11,6 +11,7 @@ import { EconomicsStep } from "@/components/onboarding/EconomicsStep";
 import { FunnelSnapshotStep } from "@/components/onboarding/FunnelSnapshotStep";
 import { CreativesUploadStep } from "@/components/onboarding/CreativesUploadStep";
 import { PositioningStep } from "@/components/onboarding/PositioningStep";
+import { TeamRolesStep } from "@/components/onboarding/TeamRolesStep";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 import { useBusinessMetrics } from "@/hooks/useBusinessMetrics";
 
@@ -164,6 +165,14 @@ const Onboarding = () => {
         )}
         {step?.isCustom && step.id === "positioning" && (
           <PositioningStep
+            data={getStepData(step.block)}
+            onUpdate={(key, value) => updateField(step.block, key, value)}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
+        {step?.isCustom && step.id === "teamRoles" && (
+          <TeamRolesStep
             data={getStepData(step.block)}
             onUpdate={(key, value) => updateField(step.block, key, value)}
             onNext={handleNext}
