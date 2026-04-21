@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { OnboardingStep, ONBOARDING_STEPS } from "@/types/companyDNA";
 import { OnboardingSidebar } from "@/components/onboarding/OnboardingSidebar";
-import { OnboardingStepView } from "@/components/onboarding/OnboardingStepView";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingComplete } from "@/components/onboarding/OnboardingComplete";
 import { BrandAssetsStep } from "@/components/onboarding/BrandAssetsStep";
-import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
-import { EconomicsStep } from "@/components/onboarding/EconomicsStep";
-import { FunnelSnapshotStep } from "@/components/onboarding/FunnelSnapshotStep";
+import { IdentityStep } from "@/components/onboarding/IdentityStep";
+import { MarketPositioningStep } from "@/components/onboarding/MarketPositioningStep";
+import { AudienceStep } from "@/components/onboarding/AudienceStep";
+import { MetricsStep } from "@/components/onboarding/MetricsStep";
+import { GoalsConstraintsStep } from "@/components/onboarding/GoalsConstraintsStep";
 import { CreativesUploadStep } from "@/components/onboarding/CreativesUploadStep";
-import { PositioningStep } from "@/components/onboarding/PositioningStep";
 import { TeamRolesStep } from "@/components/onboarding/TeamRolesStep";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 import { useBusinessMetrics } from "@/hooks/useBusinessMetrics";
@@ -27,7 +26,6 @@ const intOrNull = (v: string | undefined) => {
 };
 
 const Onboarding = () => {
-  const navigate = useNavigate();
   const { dna, loading, saveDNA } = useCompanyDNA();
   const { saveSnapshot } = useBusinessMetrics(dna?.id);
   const [currentStep, setCurrentStep] = useState(-1);
@@ -60,26 +58,24 @@ const Onboarding = () => {
   };
 
   const persistMetricsIfRelevant = async (stepId: string) => {
-    if (stepId !== "economics" && stepId !== "funnelSnapshot") return;
-    const eco = formData.economics || {};
-    const fun = formData.funnelSnapshot || {};
-    const hasAny =
-      Object.values(eco).some((v) => v?.trim()) || Object.values(fun).some((v) => v?.trim());
+    if (stepId !== "metrics") return;
+    const m = formData.metrics || {};
+    const hasAny = Object.values(m).some((v) => v?.trim());
     if (!hasAny) return;
     await saveSnapshot({
-      avg_ticket: numOrNull(eco.avg_ticket),
-      avg_margin_pct: numOrNull(eco.avg_margin_pct),
-      cac_current: numOrNull(eco.cac_current),
-      ltv_estimated: numOrNull(eco.ltv_estimated),
-      payback_months: numOrNull(eco.payback_months),
-      monthly_revenue: numOrNull(eco.monthly_revenue),
-      monthly_traffic: intOrNull(fun.monthly_traffic),
-      conversion_rate_pct: numOrNull(fun.conversion_rate_pct),
-      avg_roas: numOrNull(fun.avg_roas),
-      team_size: intOrNull(fun.team_size),
-      perceived_bottlenecks: fun.perceived_bottlenecks || null,
-      current_tools: fun.current_tools || null,
-      notes: eco.notes || null,
+      avg_ticket: numOrNull(m.avg_ticket),
+      avg_margin_pct: numOrNull(m.avg_margin_pct),
+      cac_current: numOrNull(m.cac_current),
+      ltv_estimated: numOrNull(m.ltv_estimated),
+      payback_months: null,
+      monthly_revenue: numOrNull(m.monthly_revenue),
+      monthly_traffic: intOrNull(m.monthly_traffic),
+      conversion_rate_pct: numOrNull(m.conversion_rate_pct),
+      avg_roas: numOrNull(m.avg_roas),
+      team_size: null,
+      perceived_bottlenecks: m.perceived_bottlenecks || null,
+      current_tools: m.current_tools || null,
+      notes: null,
     });
   };
 
@@ -93,12 +89,8 @@ const Onboarding = () => {
     await saveDNA(formData, nextStep >= ONBOARDING_STEPS.length);
   };
 
-  const handleBack = () => {
-    setCurrentStep((prev) => Math.max(-1, prev - 1));
-  };
-
+  const handleBack = () => setCurrentStep((prev) => Math.max(-1, prev - 1));
   const handleStart = () => setCurrentStep(0);
-
   const getStepData = (block: string) => formData[block] || {};
 
   if (loading) {
@@ -110,7 +102,7 @@ const Onboarding = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background">
       {!isWelcome && !isComplete && (
         <OnboardingSidebar
           steps={ONBOARDING_STEPS}
@@ -120,76 +112,71 @@ const Onboarding = () => {
         />
       )}
 
-      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+      <div className="flex-1 flex items-start md:items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto">
         {isWelcome && <OnboardingWelcome onStart={handleStart} />}
         {isComplete && <OnboardingComplete data={formData} />}
 
-        {step?.isCustom && step.id === "brandAssets" && (
+        {step?.id === "brandAssets" && (
           <BrandAssetsStep
             data={getStepData(step.block)}
-            onUpdate={(key, value) => updateField(step.block, key, value)}
+            onUpdate={(k, v) => updateField(step.block, k, v)}
             onNext={handleNext}
             onBack={handleBack}
           />
         )}
-        {step?.isCustom && step.id === "businessContext" && (
-          <BusinessContextStep
+        {step?.id === "identity" && (
+          <IdentityStep
             data={getStepData(step.block)}
-            onUpdate={(key, value) => updateField(step.block, key, value)}
+            onUpdate={(k, v) => updateField(step.block, k, v)}
             onNext={handleNext}
             onBack={handleBack}
           />
         )}
-        {step?.isCustom && step.id === "economics" && (
-          <EconomicsStep
+        {step?.id === "marketPositioning" && (
+          <MarketPositioningStep
             data={getStepData(step.block)}
-            onUpdate={(key, value) => updateField(step.block, key, value)}
+            onUpdate={(k, v) => updateField(step.block, k, v)}
             onNext={handleNext}
             onBack={handleBack}
           />
         )}
-        {step?.isCustom && step.id === "funnelSnapshot" && (
-          <FunnelSnapshotStep
+        {step?.id === "audience" && (
+          <AudienceStep
             data={getStepData(step.block)}
-            onUpdate={(key, value) => updateField(step.block, key, value)}
+            onUpdate={(k, v) => updateField(step.block, k, v)}
             onNext={handleNext}
             onBack={handleBack}
           />
         )}
-        {step?.isCustom && step.id === "creativesUpload" && (
+        {step?.id === "metrics" && (
+          <MetricsStep
+            data={getStepData(step.block)}
+            onUpdate={(k, v) => updateField(step.block, k, v)}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
+        {step?.id === "goalsConstraints" && (
+          <GoalsConstraintsStep
+            data={getStepData(step.block)}
+            onUpdate={(k, v) => updateField(step.block, k, v)}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
+        {step?.id === "teamRoles" && (
+          <TeamRolesStep
+            data={getStepData(step.block)}
+            onUpdate={(k, v) => updateField(step.block, k, v)}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
+        {step?.id === "creativesUpload" && (
           <CreativesUploadStep
             companyDnaId={dna?.id}
             onNext={handleNext}
             onBack={handleBack}
-          />
-        )}
-        {step?.isCustom && step.id === "positioning" && (
-          <PositioningStep
-            data={getStepData(step.block)}
-            onUpdate={(key, value) => updateField(step.block, key, value)}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        )}
-        {step?.isCustom && step.id === "teamRoles" && (
-          <TeamRolesStep
-            data={getStepData(step.block)}
-            onUpdate={(key, value) => updateField(step.block, key, value)}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        )}
-        {step && !step.isCustom && (
-          <OnboardingStepView
-            step={step}
-            data={getStepData(step.block)}
-            onUpdate={(key, value) => updateField(step.block, key, value)}
-            onNext={handleNext}
-            onBack={handleBack}
-            isFirst={currentStep === 0}
-            isLast={currentStep === ONBOARDING_STEPS.length - 1}
-            stepNumber={currentStep + 1}
-            totalSteps={ONBOARDING_STEPS.length}
           />
         )}
       </div>
