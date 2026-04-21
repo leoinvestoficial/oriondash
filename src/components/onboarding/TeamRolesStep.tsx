@@ -28,7 +28,7 @@ export const TeamRolesStep = ({ data, onUpdate, onNext, onBack }: Props) => {
   };
 
   return (
-    <div className="max-w-3xl w-full mx-auto animate-fade-in">
+    <div className="max-w-3xl w-full mx-auto animate-fade-in px-1">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
           <span className="w-10 h-10 rounded-xl orion-gradient flex items-center justify-center text-lg text-primary-foreground">
@@ -133,36 +133,38 @@ export const TeamRolesStep = ({ data, onUpdate, onNext, onBack }: Props) => {
         )}
 
         {/* Form */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+        <div className="space-y-2">
           <Input
             placeholder="Cargo (ex: Gestor de Tráfego)"
             value={draft.title}
             onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-            className="bg-orion-surface-2 border-border md:col-span-4"
+            className="bg-orion-surface-2 border-border"
           />
           <Input
             placeholder="Descrição rápida"
             value={draft.description}
             onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-            className="bg-orion-surface-2 border-border md:col-span-4"
+            className="bg-orion-surface-2 border-border"
           />
-          <Input
-            placeholder="Sênior."
-            value={draft.seniority}
-            onChange={(e) => setDraft((d) => ({ ...d, seniority: e.target.value }))}
-            className="bg-orion-surface-2 border-border md:col-span-2"
-          />
-          <Input
-            type="number"
-            min="1"
-            placeholder="Qtd"
-            value={draft.headcount}
-            onChange={(e) => setDraft((d) => ({ ...d, headcount: Number(e.target.value) }))}
-            className="bg-orion-surface-2 border-border md:col-span-1"
-          />
-          <Button onClick={handleAdd} disabled={!draft.title.trim()} className="orion-gradient text-primary-foreground md:col-span-1">
-            <Plus className="w-4 h-4" />
-          </Button>
+          <div className="grid grid-cols-[1fr_80px_auto] gap-2">
+            <Input
+              placeholder="Senioridade"
+              value={draft.seniority}
+              onChange={(e) => setDraft((d) => ({ ...d, seniority: e.target.value }))}
+              className="bg-orion-surface-2 border-border"
+            />
+            <Input
+              type="number"
+              min="1"
+              placeholder="Qtd"
+              value={draft.headcount}
+              onChange={(e) => setDraft((d) => ({ ...d, headcount: Number(e.target.value) }))}
+              className="bg-orion-surface-2 border-border"
+            />
+            <Button onClick={handleAdd} disabled={!draft.title.trim()} className="orion-gradient text-primary-foreground">
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
