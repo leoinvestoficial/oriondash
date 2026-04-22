@@ -22,7 +22,15 @@ const OAuthCallback = () => {
       }
 
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          throw new Error("Faça login novamente para concluir a conexão.");
+        }
+
         const { data, error } = await supabase.functions.invoke("oauth-callback", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: {
             code: code || auth_code,
             state,

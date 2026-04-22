@@ -307,15 +307,6 @@ const Campaigns = () => {
 
   useEffect(() => { fetchCampaigns(); }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-    const ch = supabase.channel("campaigns-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns", filter: `user_id=eq.${user.id}` },
-        () => fetchCampaigns()
-      ).subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [user]);
-
   const handleCreate = async (data: any) => {
     if (!user) return;
     const { error } = await supabase.from("campaigns").insert({

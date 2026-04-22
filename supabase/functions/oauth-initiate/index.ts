@@ -25,6 +25,27 @@ const PLATFORM_CONFIG: Record<string, {
   },
 };
 
+const encoder = new TextEncoder();
+
+const toBase64Url = (bytes: Uint8Array) =>
+  btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+async function signState(payload: string) {
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!secret) throw new Error("Missing signing secret");
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  return toBase64Url(new Uint8Array(signature));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -81,7 +102,10 @@ serve(async (req) => {
     const config = PLATFORM_CONFIG[platform];
 
     // Create state token with user ID for security
-    const state = btoa(JSON.stringify({ userId: user.id, platform, ts: Date.now() }));
+    const payload = JSON.stringify({ userId: user.id, platform, ts: Date.now() });
+    const encodedPayload = toBase64Url(encoder.encode(payload));
+    const signature = await signState(payload);
+    const state = `${encodedPayload}.${signature}`;
 
     let authorizationUrl: string;
 

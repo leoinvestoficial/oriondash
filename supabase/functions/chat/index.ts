@@ -13,12 +13,32 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { messages } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const authHeader = req.headers.get("Authorization");
     let companyContext = "";
     let teamContext = "";
     let tasksContext = "";
@@ -28,15 +48,7 @@ serve(async (req) => {
     let competitorBlock = "";
     let businessIntel = "";
 
-    if (authHeader) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabase.auth.getUser(token);
-
-      if (user) {
+    if (user) {
         const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes, campaignsRes, briefsRes, memoryRes] = await Promise.all([
           supabase.from("company_dna").select("*").eq("user_id", user.id).maybeSingle(),
           supabase.from("team_members").select("*").eq("user_id", user.id).order("created_at"),
@@ -290,7 +302,6 @@ Quando o usuário pedir QUALQUER recomendação (conteúdo, campanha, estratégi
           }
           eventsContext += `\nReferencie essas memórias quando relevante. Conecte pontos: "lembro que você comentou X há 2 semanas, e agora Y aconteceu — isso confirma a hipótese Z".\n`;
         }
-      }
     }
 
     const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });

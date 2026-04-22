@@ -57,16 +57,6 @@ const Tasks = () => {
 
   useEffect(() => { if (dna) fetchData(); }, [dna]);
 
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel("tasks-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${user.id}` },
-        () => fetchData()
-      ).subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, dna]);
-
   const handleCreate = async () => {
     if (!user || !dna || !form.title.trim()) { toast.error("Título é obrigatório"); return; }
     const { error } = await supabase.from("tasks").insert({

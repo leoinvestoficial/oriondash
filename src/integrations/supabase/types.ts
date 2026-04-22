@@ -1196,6 +1196,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_invite_preview: {
+        Args: { _token: string }
+        Returns: {
+          company_name: string
+          email: string
+          expires_at: string
+          full_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }[]
+      }
       get_user_company: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
