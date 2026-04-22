@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,7 @@ interface BrandAssetsStepProps {
 export const BrandAssetsStep = ({ data, onUpdate, onNext, onBack }: BrandAssetsStepProps) => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState<string | null>(null);
+  const [assetUrls, setAssetUrls] = useState({ logo: "", favicon: "" });
   const logoRef = useRef<HTMLInputElement>(null);
   const faviconRef = useRef<HTMLInputElement>(null);
 
@@ -40,13 +41,42 @@ export const BrandAssetsStep = ({ data, onUpdate, onNext, onBack }: BrandAssetsS
     setUploading(null);
   };
 
-  const resolveAssetSrc = (path: string | undefined) => {
+  const resolveAssetSrc = async (path: string | undefined) => {
     if (!path) return "";
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
 
-    const { data } = supabase.storage.from("brand-assets").getPublicUrl(path);
-    return data.publicUrl;
+    const { data, error } = await supabase.storage
+      .from("brand-assets")
+      .createSignedUrl(path, 60 * 60);
+
+    if (error) {
+      console.error(`Erro ao gerar URL assinada para ${path}`, error);
+      return "";
+    }
+
+    return data.signedUrl;
   };
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAssets = async () => {
+      const [logo, favicon] = await Promise.all([
+        resolveAssetSrc(data.logo_url),
+        resolveAssetSrc(data.favicon_url),
+      ]);
+
+      if (active) {
+        setAssetUrls({ logo, favicon });
+      }
+    };
+
+    void loadAssets();
+
+    return () => {
+      active = false;
+    };
+  }, [data.logo_url, data.favicon_url]);
 
   const brandColors = (data.brand_colors || "").split(",").map(c => c.trim()).filter(Boolean);
 
@@ -92,7 +122,7 @@ export const BrandAssetsStep = ({ data, onUpdate, onNext, onBack }: BrandAssetsS
           {data.logo_url ? (
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-xl bg-orion-surface-2 border border-border flex items-center justify-center overflow-hidden">
-                 <img src={resolveAssetSrc(data.logo_url)} alt="Logo" className="max-w-full max-h-full object-contain" />
+                 <img src={assetUrls.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => logoRef.current?.click()}
@@ -128,7 +158,7 @@ export const BrandAssetsStep = ({ data, onUpdate, onNext, onBack }: BrandAssetsS
           {data.favicon_url ? (
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-orion-surface-2 border border-border flex items-center justify-center overflow-hidden">
-                 <img src={resolveAssetSrc(data.favicon_url)} alt="Favicon" className="max-w-full max-h-full object-contain" />
+                 <img src={assetUrls.favicon} alt="Favicon" className="max-w-full max-h-full object-contain" />
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => faviconRef.current?.click()}
