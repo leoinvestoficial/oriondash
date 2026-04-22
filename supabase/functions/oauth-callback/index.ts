@@ -22,6 +22,30 @@ interface OAuthCreds {
   extra_config: Record<string, string>;
 }
 
+const encoder = new TextEncoder();
+
+function fromBase64Url(value: string) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = "=".repeat((4 - (normalized.length % 4 || 4)) % 4);
+  return atob(normalized + padding);
+}
+
+async function signState(payload: string) {
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!secret) throw new Error("Missing signing secret");
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  return btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 async function exchangeMetaToken(code: string, redirectUri: string, creds: OAuthCreds): Promise<TokenExchangeResult> {
   const { client_id: clientId, client_secret: clientSecret } = creds;
 
@@ -116,6 +140,28 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { code, state, redirectUri } = await req.json();
 
     if (!code || !state) {
@@ -127,7 +173,14 @@ serve(async (req) => {
 
     let stateData: { userId: string; platform: string; ts: number };
     try {
-      stateData = JSON.parse(atob(state));
+      const [encodedPayload, signature] = state.split(".");
+      if (!encodedPayload || !signature) throw new Error("invalid_state_format");
+
+      const payload = fromBase64Url(encodedPayload);
+      const expectedSignature = await signState(payload);
+      if (signature !== expectedSignature) throw new Error("invalid_state_signature");
+
+      stateData = JSON.parse(payload);
     } catch {
       return new Response(JSON.stringify({ error: "State inválido" }), {
         status: 400,
@@ -144,10 +197,12 @@ serve(async (req) => {
 
     const { platform, userId } = stateData;
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    if (userId !== user.id) {
+      return new Response(JSON.stringify({ error: "State não corresponde ao usuário autenticado" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Load user's OAuth credentials from DB
     const { data: creds } = await supabase
