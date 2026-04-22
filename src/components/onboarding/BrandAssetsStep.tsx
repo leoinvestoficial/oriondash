@@ -34,13 +34,18 @@ export const BrandAssetsStep = ({ data, onUpdate, onNext, onBack }: BrandAssetsS
       toast.error(`Erro ao fazer upload do ${type}`);
       console.error(error);
     } else {
-      const { data: urlData } = supabase.storage
-        .from("brand-assets")
-        .getPublicUrl(path);
-      onUpdate(`${type}_url`, urlData.publicUrl);
+      onUpdate(`${type}_url`, path);
       toast.success(`${type === "logo" ? "Logo" : "Favicon"} salvo!`);
     }
     setUploading(null);
+  };
+
+  const resolveAssetSrc = (path: string | undefined) => {
+    if (!path) return "";
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+
+    const { data } = supabase.storage.from("brand-assets").getPublicUrl(path);
+    return data.publicUrl;
   };
 
   const brandColors = (data.brand_colors || "").split(",").map(c => c.trim()).filter(Boolean);
@@ -87,7 +92,7 @@ export const BrandAssetsStep = ({ data, onUpdate, onNext, onBack }: BrandAssetsS
           {data.logo_url ? (
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-xl bg-orion-surface-2 border border-border flex items-center justify-center overflow-hidden">
-                <img src={data.logo_url} alt="Logo" className="max-w-full max-h-full object-contain" />
+                 <img src={resolveAssetSrc(data.logo_url)} alt="Logo" className="max-w-full max-h-full object-contain" />
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => logoRef.current?.click()}
@@ -123,7 +128,7 @@ export const BrandAssetsStep = ({ data, onUpdate, onNext, onBack }: BrandAssetsS
           {data.favicon_url ? (
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-orion-surface-2 border border-border flex items-center justify-center overflow-hidden">
-                <img src={data.favicon_url} alt="Favicon" className="max-w-full max-h-full object-contain" />
+                 <img src={resolveAssetSrc(data.favicon_url)} alt="Favicon" className="max-w-full max-h-full object-contain" />
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => faviconRef.current?.click()}

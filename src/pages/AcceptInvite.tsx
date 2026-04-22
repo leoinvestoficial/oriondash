@@ -23,15 +23,13 @@ const AcceptInvite = () => {
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from("company_invites")
-        .select("*, company_dna:company_dna_id(company_name)")
-        .eq("token", token)
-        .maybeSingle();
-      if (!data) setError("Convite não encontrado ou inválido");
-      else if (data.status !== "pending") setError("Este convite já foi usado ou foi revogado");
-      else if (new Date(data.expires_at).getTime() < Date.now()) setError("Este convite expirou");
-      else setInvite(data);
+      const { data, error } = await supabase.rpc("get_invite_preview", { _token: token });
+      const preview = Array.isArray(data) ? data[0] : data;
+
+      if (error || !preview) setError("Convite não encontrado ou inválido");
+      else if (preview.status !== "pending") setError("Este convite já foi usado ou foi revogado");
+      else if (new Date(preview.expires_at).getTime() < Date.now()) setError("Este convite expirou");
+      else setInvite(preview);
       setLoading(false);
     })();
   }, [token]);
@@ -80,8 +78,8 @@ const AcceptInvite = () => {
               <CheckCircle2 className="w-7 h-7 text-primary-foreground" />
             </div>
             <h1 className="text-heading text-foreground mb-2">Você foi convidado</h1>
-            <p className="text-sm text-muted-foreground mb-1">
-              para entrar em <b className="text-foreground">{invite?.company_dna?.company_name || "Empresa"}</b>
+              <p className="text-sm text-muted-foreground mb-1">
+                para entrar em <b className="text-foreground">{invite?.company_name || "Empresa"}</b>
             </p>
             <p className="text-xs text-muted-foreground mb-6">como {invite?.role}</p>
 

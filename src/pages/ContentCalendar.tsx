@@ -221,15 +221,6 @@ const ContentCalendar = () => {
 
   useEffect(() => { fetchData(); }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-    const ch = supabase.channel("content-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "content_calendar", filter: `user_id=eq.${user.id}` },
-        () => fetchData()
-      ).subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [user]);
-
   const handleCreate = async (data: any) => {
     if (!user) return;
     const { error } = await supabase.from("content_calendar").insert({ user_id: user.id, ...data });
