@@ -3,6 +3,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Plus, Sparkles, FileText, Palette, Target, BookOpen } from "lucide-react";
@@ -10,6 +12,8 @@ import { BriefCard, BriefDetail } from "@/components/studio/BriefCard";
 import { BriefForm } from "@/components/studio/BriefForm";
 import { PageHelpBanner } from "@/components/help/PageHelpBanner";
 import { PAGE_HELP } from "@/lib/pageHelp";
+import { usePublicationJobs } from "@/hooks/usePublicationJobs";
+import type { PublicationChannel, PublicationType } from "@/lib/publicationProviders";
 
 interface Brief {
   id: string;
@@ -35,6 +39,14 @@ const Studio = () => {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState("all");
   const [form, setForm] = useState(emptyForm);
+  const [publicationBrief, setPublicationBrief] = useState<Brief | null>(null);
+  const [publicationForm, setPublicationForm] = useState({
+    channel: "instagram" as PublicationChannel,
+    publication_type: "organic_post" as PublicationType,
+    scheduled_at: "",
+    objective: "",
+  });
+  const { createDraft } = usePublicationJobs();
 
   const fetchBriefs = async () => {
     if (!user) return;
@@ -93,6 +105,31 @@ const Studio = () => {
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase.from("creative_briefs").update({ status }).eq("id", id);
     if (error) toast.error("Erro ao atualizar status");
+  };
+
+  const preparePublication = async () => {
+    if (!publicationBrief) return;
+    const content = publicationBrief.content || {};
+    const caption = [
+      content.mensagem_chave || content.hook_principal || content.objetivo || publicationBrief.title,
+      content.cta ? `\n${content.cta}` : "",
+    ].filter(Boolean).join("\n");
+
+    await createDraft({
+      source_type: "creative_brief",
+      source_id: publicationBrief.id,
+      campaign_id: publicationBrief.campaign_id,
+      channel: publicationForm.channel,
+      publication_type: publicationForm.publication_type,
+      title: `Publicação — ${publicationBrief.title}`,
+      copy: String(content.mensagem_chave || content.roteiro_base || ""),
+      caption,
+      scheduled_at: publicationForm.scheduled_at ? new Date(publicationForm.scheduled_at).toISOString() : null,
+      autonomy_level: "assisted_execution",
+      requires_approval: true,
+      data_origin: "mock",
+    });
+    setPublicationBrief(null);
   };
 
   const filtered = filter === "all" ? briefs : briefs.filter(b => b.brief_type === filter);
@@ -211,6 +248,7 @@ const Studio = () => {
                 <BriefDetail
                   brief={selectedBrief}
                   onStatusChange={updateStatus}
+                  onPreparePublication={setPublicationBrief}
                 />
               ) : (
                 <div className="bg-card border border-border rounded-xl p-12 text-center">
@@ -221,6 +259,73 @@ const Studio = () => {
           </div>
         )}
       </div>
+      <Dialog open={Boolean(publicationBrief)} onOpenChange={(open) => !open && setPublicationBrief(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Preparar publicação</DialogTitle>
+            <DialogDescription>
+              Publicação demonstrativa em staging/mock. O Orion criará um rascunho com aprovação obrigatória, mas Meta/Instagram real está desativado e nada será enviado para canal real.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-orion-coral/30 bg-orion-coral/10 px-3 py-2 text-sm text-foreground">
+            Ação registrada apenas dentro do Orion. Use este fluxo para validar governança, aprovação e agendamento mock.
+          </div>
+          <div className="grid gap-3">
+            <label className="space-y-1">
+              <span className="text-xs text-muted-foreground">Canal</span>
+              <select
+                value={publicationForm.channel}
+                onChange={(event) => setPublicationForm((prev) => ({ ...prev, channel: event.target.value as PublicationChannel }))}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="email">Email</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="meta_ads">Meta Ads</option>
+                <option value="google_ads">Google Ads</option>
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-muted-foreground">Tipo</span>
+              <select
+                value={publicationForm.publication_type}
+                onChange={(event) => setPublicationForm((prev) => ({ ...prev, publication_type: event.target.value as PublicationType }))}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="organic_post">Post orgânico</option>
+                <option value="story">Story</option>
+                <option value="reel">Reel</option>
+                <option value="carousel">Carrossel</option>
+                <option value="email">Email</option>
+                <option value="whatsapp_message">Mensagem WhatsApp</option>
+                <option value="paid_ad">Anúncio pago</option>
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-muted-foreground">Agendar para</span>
+              <Input
+                type="datetime-local"
+                value={publicationForm.scheduled_at}
+                onChange={(event) => setPublicationForm((prev) => ({ ...prev, scheduled_at: event.target.value }))}
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-muted-foreground">Objetivo</span>
+              <Input
+                value={publicationForm.objective}
+                onChange={(event) => setPublicationForm((prev) => ({ ...prev, objective: event.target.value }))}
+                placeholder="Ex.: recuperar CTR da campanha de remarketing"
+              />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPublicationBrief(null)}>Cancelar</Button>
+            <Button onClick={preparePublication}>Criar rascunho mock e aprovação</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };

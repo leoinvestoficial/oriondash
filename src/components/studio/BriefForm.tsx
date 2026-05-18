@@ -9,9 +9,15 @@ interface BriefFormData {
   objetivo: string;
   publico: string;
   mensagem_chave: string;
+  angulo_criativo: string;
+  hook_principal: string;
   formato: string;
+  estrutura_peca: string;
+  roteiro_base: string;
   tom: string;
   referencias: string;
+  prompt_visual: string;
+  testes_ab: string;
   cta: string;
   metricas_sucesso: string;
 }
@@ -89,6 +95,29 @@ export const BriefForm = ({ form, onFormChange, onSubmit, onCancel }: BriefFormP
         />
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Ângulo criativo</label>
+          <Textarea
+            value={form.angulo_criativo}
+            onChange={(e) => onFormChange(f => ({ ...f, angulo_criativo: e.target.value }))}
+            placeholder="Qual narrativa ou abordagem deve conduzir a peça?"
+            rows={2}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Hook principal</label>
+          <Textarea
+            value={form.hook_principal}
+            onChange={(e) => onFormChange(f => ({ ...f, hook_principal: e.target.value }))}
+            placeholder="Qual abertura deve capturar a atenção nos primeiros segundos?"
+            rows={2}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Formato</label>
@@ -119,6 +148,29 @@ export const BriefForm = ({ form, onFormChange, onSubmit, onCancel }: BriefFormP
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Estrutura da peça</label>
+          <Textarea
+            value={form.estrutura_peca}
+            onChange={(e) => onFormChange(f => ({ ...f, estrutura_peca: e.target.value }))}
+            placeholder="Ex: hook, dor, prova, CTA..."
+            rows={2}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Roteiro base</label>
+          <Textarea
+            value={form.roteiro_base}
+            onChange={(e) => onFormChange(f => ({ ...f, roteiro_base: e.target.value }))}
+            placeholder="Sequência sugerida da narrativa ou do vídeo"
+            rows={2}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+        </div>
+      </div>
+
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Referências visuais</label>
         <Textarea
@@ -128,6 +180,29 @@ export const BriefForm = ({ form, onFormChange, onSubmit, onCancel }: BriefFormP
           rows={2}
           className="bg-orion-surface-2 border-border resize-none"
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Prompt visual</label>
+          <Textarea
+            value={form.prompt_visual}
+            onChange={(e) => onFormChange(f => ({ ...f, prompt_visual: e.target.value }))}
+            placeholder="Descreva a direção visual desejada"
+            rows={2}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Testes A/B</label>
+          <Textarea
+            value={form.testes_ab}
+            onChange={(e) => onFormChange(f => ({ ...f, testes_ab: e.target.value }))}
+            placeholder="Quais variações devem ser comparadas?"
+            rows={2}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+        </div>
       </div>
 
       <div>

@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Eye, Sparkles, ChevronDown, ChevronUp, Target, Users, MessageSquare, Palette, BarChart3 } from "lucide-react";
+import { Eye, Sparkles, ChevronDown, ChevronUp, Target, Users, MessageSquare, Palette, BarChart3, Clapperboard, Wand2, TestTubeDiagonal, LayoutTemplate, Send, LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Brief {
   id: string;
   title: string;
   brief_type: string;
   status: string;
-  content: Record<string, any>;
+  content: Record<string, unknown>;
   campaign_id: string | null;
   created_at: string;
   updated_at: string;
@@ -27,13 +28,19 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   archived: { label: "Arquivado", className: "bg-muted/50 text-muted-foreground/50" },
 };
 
-const contentFieldLabels: Record<string, { label: string; icon: any }> = {
+const contentFieldLabels: Record<string, { label: string; icon: LucideIcon }> = {
   objetivo: { label: "Objetivo", icon: Target },
   publico: { label: "Público-alvo", icon: Users },
   mensagem_chave: { label: "Mensagem-chave", icon: MessageSquare },
   formato: { label: "Formato", icon: Palette },
   tom: { label: "Tom de voz", icon: MessageSquare },
   referencias: { label: "Referências", icon: Eye },
+  angulo_criativo: { label: "Ângulo Criativo", icon: Sparkles },
+  hook_principal: { label: "Hook Principal", icon: Wand2 },
+  estrutura_peca: { label: "Estrutura da Peça", icon: LayoutTemplate },
+  roteiro_base: { label: "Roteiro Base", icon: Clapperboard },
+  prompt_visual: { label: "Prompt Visual", icon: Palette },
+  testes_ab: { label: "Próximos Testes A/B", icon: TestTubeDiagonal },
   cta: { label: "CTA", icon: Target },
   metricas_sucesso: { label: "Métricas de Sucesso", icon: BarChart3 },
 };
@@ -80,9 +87,10 @@ export const BriefCard = ({ brief, isSelected, onSelect }: BriefCardProps) => {
 interface BriefDetailProps {
   brief: Brief;
   onStatusChange: (id: string, status: string) => void;
+  onPreparePublication?: (brief: Brief) => void;
 }
 
-export const BriefDetail = ({ brief, onStatusChange }: BriefDetailProps) => {
+export const BriefDetail = ({ brief, onStatusChange, onPreparePublication }: BriefDetailProps) => {
   const [expanded, setExpanded] = useState(true);
   const type = typeConfig[brief.brief_type] || typeConfig.creative;
   const status = statusConfig[brief.status] || statusConfig.draft;
@@ -129,6 +137,11 @@ export const BriefDetail = ({ brief, onStatusChange }: BriefDetailProps) => {
             </button>
           );
         })}
+        {onPreparePublication && (
+          <Button size="sm" variant="outline" className="ml-auto gap-2" onClick={() => onPreparePublication(brief)}>
+            <Send className="h-3.5 w-3.5" /> Preparar publicação
+          </Button>
+        )}
       </div>
 
       {/* Content */}
