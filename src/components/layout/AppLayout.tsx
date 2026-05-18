@@ -6,96 +6,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useOrionViewMode } from "@/hooks/useOrionViewMode";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { startEmployeeTour, startOwnerTour } from "@/lib/tours";
-import { modeForRole, normalizeOrionRole, type OrionMode } from "@/lib/productRoles";
+import { modeForRole, normalizeOrionRole } from "@/lib/productRoles";
+import { getNavigationItems, type NavigationItem } from "@/config/navigation";
+import { ModeSwitcher } from "@/components/layout/ModeSwitcher";
 import {
-  LayoutDashboard,
-  CheckCircle2,
-  Palette,
-  MessageSquare,
-  Brain,
   LogOut,
-  Users,
-  ListTodo,
-  Plug,
-  Megaphone,
-  CalendarDays,
-  Sparkles,
-  Zap,
-  BrainCircuit,
   PlayCircle,
   Menu,
-  GitBranch,
-  Contact,
-  FileText,
-  Target,
-  Radar,
-  UserRoundSearch,
-  BadgeCheck,
-  ShieldCheck,
-  Settings,
-  Orbit,
-  Building2,
-  Network,
 } from "lucide-react";
-
-interface NavItem {
-  path: string;
-  label: string;
-  icon: any;
-  badge?: number;
-  ownerOnly?: boolean;
-  modes?: OrionMode[];
-  tour: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { path: "/central", label: "Central Orion", icon: Orbit, tour: "central", modes: ["owner", "manager", "agency"] },
-  { path: "/clientes", label: "Contas", icon: Building2, tour: "accounts", modes: ["agency"] },
-  { path: "/decisoes", label: "Insights", icon: Zap, tour: "insights", modes: ["manager"] },
-  { path: "/onboarding", label: "Company DNA", icon: Brain, tour: "onboarding", ownerOnly: true, modes: ["owner"] },
-  { path: "/clientes", label: "CRM", icon: Contact, tour: "clientes", modes: ["owner"] },
-  { path: "/campaigns", label: "Campanhas", icon: Megaphone, tour: "campaigns", modes: ["owner", "manager", "agency"] },
-  { path: "/calendar", label: "Calendário", icon: CalendarDays, tour: "calendar", modes: ["owner"] },
-  { path: "/studio", label: "Criativos e Mídia", icon: Palette, tour: "studio", modes: ["owner"] },
-  { path: "/brand-identity", label: "Marca", icon: BadgeCheck, tour: "brand-identity", ownerOnly: true, modes: ["owner"] },
-  { path: "/tasks", label: "Tarefas", icon: ListTodo, tour: "tasks", modes: ["owner"] },
-  { path: "/internal-structure", label: "Estrutura Interna", icon: Network, tour: "internal-structure", ownerOnly: true, modes: ["owner"] },
-  { path: "/cerebro", label: "Base Estratégica", icon: BrainCircuit, tour: "cerebro", modes: ["owner"] },
-  { path: "/approvals", label: "Aprovações", icon: CheckCircle2, tour: "approvals", ownerOnly: true, modes: ["owner", "agency"] },
-  { path: "/executive-report", label: "Relatórios", icon: FileText, tour: "executive-report", ownerOnly: true, modes: ["owner", "manager", "agency"] },
-  { path: "/chat", label: "Chat Estratégico", icon: MessageSquare, tour: "chat", modes: ["owner"] },
-  { path: "/studio", label: "Criativos e Mídia", icon: Palette, tour: "studio", modes: ["manager"] },
-  { path: "/studio", label: "Criação", icon: Palette, tour: "studio", modes: ["agency"] },
-  { path: "/funnels", label: "Funis", icon: GitBranch, tour: "funnels", modes: ["manager"] },
-  { path: "/calendar", label: "Calendário", icon: CalendarDays, tour: "calendar", modes: ["manager"] },
-  { path: "/tasks", label: "Tarefas", icon: ListTodo, tour: "tasks", modes: ["manager"] },
-  { path: "/clientes", label: "CRM", icon: Contact, tour: "clientes", modes: ["manager"] },
-  { path: "/team", label: "Equipe", icon: Users, tour: "team", ownerOnly: true, modes: ["agency"] },
-  { path: "/governance", label: "Governança", icon: ShieldCheck, tour: "governance", ownerOnly: true, modes: ["agency"] },
-];
-const BOTTOM_ITEMS: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard legado", icon: LayoutDashboard, tour: "dashboard", modes: ["manager", "agency"] },
-  { path: "/diagnostico", label: "Diagnóstico", icon: Sparkles, tour: "diagnostico", ownerOnly: true, modes: ["manager"] },
-  { path: "/strategy", label: "Estratégia", icon: Target, tour: "strategy", ownerOnly: true, modes: ["manager"] },
-  { path: "/intelligence", label: "Radar", icon: Radar, tour: "intelligence", ownerOnly: true, modes: ["manager"] },
-  { path: "/cerebro", label: "Base Estratégica", icon: BrainCircuit, tour: "cerebro", modes: ["manager", "agency"] },
-  { path: "/personas", label: "Personas", icon: UserRoundSearch, tour: "personas", ownerOnly: true, modes: ["manager"] },
-  { path: "/brand-identity", label: "Marca", icon: BadgeCheck, tour: "brand-identity", ownerOnly: true, modes: ["manager", "agency"] },
-  { path: "/integrations", label: "Integrações", icon: Plug, tour: "integrations", ownerOnly: true, modes: ["manager", "agency"] },
-  { path: "/onboarding", label: "Company DNA", icon: Brain, tour: "onboarding", ownerOnly: true, modes: ["manager"] },
-  { path: "/settings", label: "Configurações", icon: Settings, tour: "settings", ownerOnly: true, modes: ["owner", "manager", "agency"] },
-];
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 interface SidebarBodyProps {
-  visibleTop: NavItem[];
-  visibleBottom: NavItem[];
+  visibleItems: NavigationItem[];
   pathname: string;
   initials: string;
   displayName: string;
@@ -103,18 +32,40 @@ interface SidebarBodyProps {
   onNavigate?: () => void;
   onSignOut: () => void;
   onReplayTour: () => void;
+  viewMode: "simplified" | "pro";
+  onViewModeChange: (mode: "simplified" | "pro") => void;
+  canUsePro: boolean;
 }
 
 const SidebarBody = ({
-  visibleTop, visibleBottom, pathname, initials, displayName, email, onNavigate, onSignOut, onReplayTour,
-}: SidebarBodyProps) => (
-  <div className="flex flex-col h-full">
-    <div className="flex items-center justify-center px-5 py-5 border-b border-border">
-      <img src={orionLogo} alt="Orion" className="w-10 h-10 rounded-lg object-cover" />
-    </div>
+  visibleItems, pathname, initials, displayName, email, onNavigate, onSignOut, onReplayTour,
+  viewMode, onViewModeChange, canUsePro,
+}: SidebarBodyProps) => {
+  const grouped = visibleItems.reduce<Record<string, NavigationItem[]>>((acc, item) => {
+    const group = viewMode === "pro" ? item.group || "Outros" : "Simplificado";
+    acc[group] = [...(acc[group] || []), item];
+    return acc;
+  }, {});
 
-    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-      {visibleTop.map((item) => {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-center px-5 py-5 border-b border-border">
+        <img src={orionLogo} alt="Orion" className="w-10 h-10 rounded-lg object-cover" />
+      </div>
+
+      <div className="border-b border-border px-3 py-3">
+        <ModeSwitcher value={viewMode} onChange={onViewModeChange} canUsePro={canUsePro} />
+      </div>
+
+      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+        {Object.entries(grouped).map(([group, items]) => (
+          <div key={group} className="space-y-1">
+            {viewMode === "pro" && (
+              <p className="px-3 pb-1 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                {group}
+              </p>
+            )}
+            {items.map((item) => {
         const isActive = pathname === item.path;
         return (
           <Link
@@ -130,7 +81,7 @@ const SidebarBody = ({
             )}
           >
             <item.icon className="w-4 h-4 shrink-0" />
-            <span className="flex-1">{item.label}</span>
+            <span className="flex-1 min-w-0 truncate">{item.label}</span>
             {item.badge && (
               <span className="w-5 h-5 rounded-full bg-orion-coral text-[10px] flex items-center justify-center text-primary-foreground font-medium">
                 {item.badge}
@@ -139,29 +90,11 @@ const SidebarBody = ({
           </Link>
         );
       })}
-    </nav>
+          </div>
+        ))}
+      </nav>
 
-    <div className="px-3 pb-2 space-y-1 border-t border-border pt-4">
-      {visibleBottom.map((item) => {
-        const isActive = pathname === item.path;
-        return (
-          <Link
-            key={`${item.path}-${item.tour}`}
-            to={item.path}
-            data-tour={`nav-${item.tour}`}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all min-h-[44px]",
-              isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            )}
-          >
-            <item.icon className="w-4 h-4" />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
+      <div className="px-3 pb-2 space-y-1 border-t border-border pt-4">
       <button
         onClick={() => { onReplayTour(); onNavigate?.(); }}
         className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all text-muted-foreground hover:text-foreground hover:bg-muted/30 min-h-[44px]"
@@ -169,9 +102,9 @@ const SidebarBody = ({
         <PlayCircle className="w-4 h-4" />
         <span>Refazer tour</span>
       </button>
-    </div>
+      </div>
 
-    <div className="px-4 py-3 border-t border-border flex items-center gap-3">
+      <div className="px-4 py-3 border-t border-border flex items-center gap-3">
       <div className="w-8 h-8 rounded-full bg-orion-surface-3 flex items-center justify-center text-xs text-muted-foreground">
         {initials}
       </div>
@@ -182,9 +115,10 @@ const SidebarBody = ({
       <button onClick={onSignOut} className="text-muted-foreground hover:text-foreground transition-colors p-2 -m-2">
         <LogOut className="w-4 h-4" />
       </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
@@ -193,15 +127,17 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const { role, isOwner, isAdmin } = useUserRole();
   const { completeTour } = useUserPreferences();
   const isMobile = useIsMobile();
+  const { viewMode, setViewMode, canUsePro } = useOrionViewMode();
   const [open, setOpen] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState(0);
 
   const productRole = normalizeOrionRole(role);
   const productMode = modeForRole(productRole);
-  const canSeeOwnerOnly = isOwner || isAdmin || productRole === "agency_admin" || productRole === "client_viewer";
-  const byMode = (item: NavItem) => !item.modes || item.modes.includes(productMode);
-  const visibleTop = NAV_ITEMS.filter((i) => byMode(i) && (!i.ownerOnly || canSeeOwnerOnly));
-  const visibleBottom = BOTTOM_ITEMS.filter((i) => byMode(i) && (!i.ownerOnly || canSeeOwnerOnly));
+  const canSeeOwnerOnly = isOwner || isAdmin || productRole === "agency_admin";
+  const visibleItems = getNavigationItems(viewMode)
+    .filter((item) => !item.productModes || item.productModes.includes(productMode))
+    .filter((item) => !item.roles || item.roles.includes(productRole))
+    .filter((item) => !item.ownerOnly || canSeeOwnerOnly);
 
   useEffect(() => {
     if (!user || !canSeeOwnerOnly) {
@@ -222,7 +158,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     return () => { cancelled = true; };
   }, [user, canSeeOwnerOnly]);
 
-  const topWithBadges = visibleTop.map((item) => (
+  const itemsWithBadges = visibleItems.map((item) => (
     item.path === "/approvals" ? { ...item, badge: pendingApprovals || undefined } : item
   ));
 
@@ -250,14 +186,16 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       {!isMobile && (
         <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
           <SidebarBody
-            visibleTop={topWithBadges}
-            visibleBottom={visibleBottom}
+            visibleItems={itemsWithBadges}
             pathname={location.pathname}
             initials={initials}
             displayName={displayName}
             email={user?.email}
             onSignOut={handleSignOut}
             onReplayTour={replayTour}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            canUsePro={canUsePro}
           />
         </aside>
       )}
@@ -277,8 +215,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 bg-card border-border">
                 <SidebarBody
-                  visibleTop={topWithBadges}
-                  visibleBottom={visibleBottom}
+                  visibleItems={itemsWithBadges}
                   pathname={location.pathname}
                   initials={initials}
                   displayName={displayName}
@@ -286,6 +223,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   onNavigate={() => setOpen(false)}
                   onSignOut={handleSignOut}
                   onReplayTour={replayTour}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  canUsePro={canUsePro}
                 />
               </SheetContent>
             </Sheet>

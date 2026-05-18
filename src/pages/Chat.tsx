@@ -8,6 +8,7 @@ import { streamChat, ChatMessage } from "@/lib/chatStream";
 import { parseActions, executeAction } from "@/lib/chatActions";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useOrionViewMode } from "@/hooks/useOrionViewMode";
 import { buildCentralChatContext, type CentralChatContext } from "@/lib/centralChatContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +29,7 @@ const Chat = () => {
   const { user } = useAuth();
   const { dna } = useCompanyDNA();
   const { role } = useUserRole();
+  const { viewMode } = useOrionViewMode();
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -80,10 +82,10 @@ const Chat = () => {
     await saveMessage("user", msg);
 
     let assistantContent = "";
-    let centralContext: CentralChatContext | undefined;
-    if (user && searchParams.get("context") === "central") {
+    let centralContext: Record<string, unknown> | undefined;
+    if (user) {
       try {
-        centralContext = await buildCentralChatContext({ userId: user.id, companyId: dna?.id, role });
+        centralContext = await buildCentralChatContext({ userId: user.id, companyId: dna?.id, role, viewMode }) as unknown as Record<string, unknown>;
       } catch {
         centralContext = undefined;
       }

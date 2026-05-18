@@ -9,11 +9,13 @@ import { DataSourceBadge } from "@/components/central/DataSourceBadge";
 import { MarketingFinanceSummary } from "@/components/central/MarketingFinanceSummary";
 import { FinanceTargetsDialog } from "@/components/central/FinanceTargetsDialog";
 import { useCentralOrion, type CentralUrgency } from "@/hooks/useCentralOrion";
+import { useOrionViewMode } from "@/hooks/useOrionViewMode";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
   ArrowRight,
   BadgeCheck,
+  Brain,
   BrainCircuit,
   CalendarClock,
   CheckCircle2,
@@ -43,16 +45,217 @@ const SectionHeader = ({ title, kicker }: { title: string; kicker: string }) => 
   </div>
 );
 
+type CentralData = ReturnType<typeof useCentralOrion>;
+
+const SimplifiedCentralView = ({
+  data,
+  onConfigureFinance,
+}: {
+  data: CentralData;
+  onConfigureFinance: () => void;
+}) => {
+  const primaryActions = data.weeklyActions.slice(0, 3);
+  const approvalCount = data.pendingApprovals.length;
+  const publicationCount = data.publications.filter((job) => ["awaiting_approval", "approved", "scheduled"].includes(job.status)).length;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
+        <header className="rounded-xl border border-border bg-card p-4 sm:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <DataSourceBadge source={data.dataSource} />
+                <Badge variant="outline">Modo Simplificado</Badge>
+                <span className="text-xs text-muted-foreground">{data.periodLabel}</span>
+              </div>
+              <h1 className="text-display text-foreground">Central Orion</h1>
+              <p className="text-sm text-muted-foreground">
+                {data.companyName ? `${data.companyName} — ` : ""}o que precisa da sua atenção agora.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center sm:min-w-[360px]">
+              <div className="rounded-lg bg-background/60 p-3">
+                <p className="text-xl font-semibold text-foreground">{data.score}</p>
+                <p className="text-[10px] text-muted-foreground">saúde</p>
+              </div>
+              <div className="rounded-lg bg-background/60 p-3">
+                <p className="text-xl font-semibold text-foreground">{approvalCount}</p>
+                <p className="text-[10px] text-muted-foreground">aprovar</p>
+              </div>
+              <div className="rounded-lg bg-background/60 p-3">
+                <p className="text-xl font-semibold text-foreground">{data.pendingTasks}</p>
+                <p className="text-[10px] text-muted-foreground">ações</p>
+              </div>
+            </div>
+          </div>
+          {data.dataNotice && (
+            <div className="mt-4 rounded-lg border border-orion-amber/30 bg-orion-amber/10 px-3 py-2 text-sm text-foreground">
+              {data.dataNotice}
+            </div>
+          )}
+          {import.meta.env.VITE_ENABLE_META_PUBLICATION_PROVIDER !== "true" && (
+            <div className="mt-3 rounded-lg border border-orion-coral/30 bg-orion-coral/10 px-3 py-2 text-sm text-foreground">
+              Ambiente staging/mock: publicações são demonstrativas e não são enviadas para canais reais.
+            </div>
+          )}
+        </header>
+
+        <Card className="border-primary/30 bg-primary/5 p-5 sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl orion-gradient text-primary-foreground">
+                <Target className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-mono uppercase text-muted-foreground">Prioridade agora</p>
+                <h2 className="text-2xl font-semibold text-foreground">{data.priority.title}</h2>
+              </div>
+            </div>
+            <Badge className={cn("border", urgencyClass(data.priority.urgency))}>urgência {data.priority.urgency}</Badge>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Por que isso importa</p>
+                <p className="text-sm text-foreground">{data.priority.reason}</p>
+              </div>
+              <div className="rounded-lg border border-orion-amber/30 bg-orion-amber/10 p-3">
+                <p className="text-xs font-medium text-orion-amber">Impacto esperado</p>
+                <p className="text-sm text-foreground">{data.priority.financialImpact}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">O que o Orion recomenda</p>
+                <p className="text-sm text-foreground">{data.priority.recommendedAction}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground">Confiança da IA</p>
+              <p className="mt-1 text-3xl font-semibold text-foreground">{data.priority.confidenceScore}%</p>
+              <Progress value={data.priority.confidenceScore} className="mt-2" />
+              <Link to={data.priority.ctaHref}>
+                <Button className="mt-4 w-full gap-2 orion-gradient text-primary-foreground">
+                  Resolver agora <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link to={`/chat?context=central&prompt=${encodeURIComponent("Explique essa prioridade em linguagem simples")}`}>
+                <Button variant="outline" className="mt-2 w-full">Entender melhor</Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid gap-3 md:grid-cols-4">
+          {[
+            { label: "Aguardando aprovação", value: approvalCount, text: "itens bloqueando execução", href: "/approvals", icon: ClipboardCheck },
+            { label: "Campanhas em andamento", value: data.activeCampaigns, text: "ações rodando agora", href: "/campaigns", icon: Megaphone },
+            { label: "Próximas ações", value: primaryActions.length, text: "foco desta semana", href: "/tasks", icon: CheckCircle2 },
+            { label: "Publicações", value: publicationCount, text: "mock/agendamentos", href: "/studio", icon: CalendarClock },
+          ].map(({ label, value, text, href, icon: Icon }) => (
+            <Link key={label} to={href} className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <Icon className="h-4 w-4 text-primary" />
+                <span className="text-2xl font-semibold text-foreground">{value}</span>
+              </div>
+              <p className="text-sm font-medium text-foreground">{label}</p>
+              <p className="text-xs text-muted-foreground">{text}</p>
+            </Link>
+          ))}
+        </div>
+
+        <Card className="border-border bg-card p-5">
+          <SectionHeader kicker="O QUE FAZER AGORA" title="O que o Orion recomenda" />
+          <div className="space-y-3">
+            {primaryActions.length === 0 ? (
+              <div className="rounded-lg border border-border bg-background/40 p-4 text-sm text-muted-foreground">
+                Nenhuma ação urgente agora. Peça ao Chat Orion para montar um plano simples para hoje.
+              </div>
+            ) : primaryActions.map((action) => (
+              <div key={action.id} className="rounded-lg border border-border bg-background/40 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <Badge variant="outline" className="mb-2 text-[10px]">{action.type}</Badge>
+                    <h3 className="text-sm font-semibold text-foreground">{action.name}</h3>
+                    <p className="text-xs text-muted-foreground">{action.reason}</p>
+                    <p className="mt-1 text-xs text-foreground">Impacto: {action.expectedImpact}</p>
+                  </div>
+                  <div className="flex gap-2 sm:flex-col">
+                    <Button size="sm" onClick={() => data.createTaskFromAction(action)}>Criar tarefa</Button>
+                    <Link to={action.ctaHref}><Button size="sm" variant="outline">Ver detalhes no Pro</Button></Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div className="grid gap-5 lg:grid-cols-[1fr_0.8fr]">
+          <MarketingFinanceSummary finance={data.finance} onConfigure={onConfigureFinance} />
+          <Card className="border-border bg-card p-5">
+            <SectionHeader kicker="RESUMO DA OPERAÇÃO" title="Sem precisar interpretar tudo" />
+            <div className="space-y-3 text-sm">
+              <p className="rounded-lg border border-border bg-background/40 p-3 text-foreground">
+                {data.campaignsInMotion[0]
+                  ? `Campanha em foco: ${data.campaignsInMotion[0].name}. Próxima ação: ${data.campaignsInMotion[0].recommendedAction}.`
+                  : "Ainda faltam campanhas ou dados recentes para o Orion apontar uma campanha em foco."}
+              </p>
+              <p className="rounded-lg border border-border bg-background/40 p-3 text-foreground">
+                {data.alerts[0]?.description || "Nenhum alerta crítico agora. O Orion continua monitorando."}
+              </p>
+              <Link to="/chat?context=central&prompt=O%20que%20devo%20fazer%20hoje%3F">
+                <Button variant="outline" className="w-full gap-2">
+                  Perguntar ao Chat Orion <BrainCircuit className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CentralOrion = () => {
   const data = useCentralOrion();
+  const { viewMode } = useOrionViewMode();
   const [financeOpen, setFinanceOpen] = useState(false);
   const metaProviderEnabled = import.meta.env.VITE_ENABLE_META_PUBLICATION_PROVIDER === "true";
 
   if (data.loading) {
     return (
       <AppLayout>
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 rounded-lg orion-gradient animate-pulse-glow" />
+        <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6 animate-pulse">
+          <div className="h-32 rounded-xl bg-card border border-border" />
+          <div className="h-52 rounded-xl bg-card border border-border" />
+          <div className="grid gap-3 md:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-20 rounded-xl bg-card border border-border" />
+            ))}
+          </div>
+          <div className="h-40 rounded-xl bg-card border border-border" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!data.companyName) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
+          <div className="w-16 h-16 rounded-2xl orion-gradient flex items-center justify-center orion-glow mb-6">
+            <Brain className="w-8 h-8 text-primary-foreground" />
+          </div>
+          <h1 className="text-display text-foreground mb-3">Configure o Company DNA</h1>
+          <p className="text-muted-foreground max-w-md mb-8">
+            O Orion precisa conhecer sua empresa para operar como seu head de marketing e organizar prioridades.
+          </p>
+          <Link to="/onboarding">
+            <Button className="orion-gradient text-primary-foreground rounded-xl px-6 py-3 gap-2">
+              <Brain className="w-4 h-4" />
+              Iniciar Company DNA
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
         </div>
       </AppLayout>
     );
@@ -60,6 +263,9 @@ const CentralOrion = () => {
 
   return (
     <AppLayout>
+      {viewMode === "simplified" ? (
+        <SimplifiedCentralView data={data} onConfigureFinance={() => setFinanceOpen(true)} />
+      ) : (
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
           <header className="rounded-xl border border-border bg-card p-4 sm:p-5">
@@ -413,6 +619,7 @@ const CentralOrion = () => {
           </div>
         </div>
       </div>
+      )}
       <FinanceTargetsDialog open={financeOpen} onOpenChange={setFinanceOpen} onSaved={data.refetch} />
     </AppLayout>
   );
