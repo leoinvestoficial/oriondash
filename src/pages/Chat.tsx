@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Send, Sparkles, BarChart3, Lightbulb, Brain, ListTodo, FileText, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { streamChat, ChatMessage } from "@/lib/chatStream";
 import { parseActions, executeAction } from "@/lib/chatActions";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
+import { useUserRole } from "@/hooks/useUserRole";
+import { buildCentralChatContext, type CentralChatContext } from "@/lib/centralChatContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -24,10 +27,13 @@ const SUGGESTIONS = [
 const Chat = () => {
   const { user } = useAuth();
   const { dna } = useCompanyDNA();
+  const { role } = useUserRole();
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const promptAppliedRef = useRef(false);
 
   // Load chat history
   useEffect(() => {
@@ -74,6 +80,14 @@ const Chat = () => {
     await saveMessage("user", msg);
 
     let assistantContent = "";
+    let centralContext: CentralChatContext | undefined;
+    if (user && searchParams.get("context") === "central") {
+      try {
+        centralContext = await buildCentralChatContext({ userId: user.id, companyId: dna?.id, role });
+      } catch {
+        centralContext = undefined;
+      }
+    }
 
     const updateAssistant = (chunk: string) => {
       assistantContent += chunk;
@@ -91,6 +105,7 @@ const Chat = () => {
     try {
       await streamChat({
         messages: newMessages,
+        context: centralContext,
         onDelta: updateAssistant,
         onDone: async () => {
           setIsStreaming(false);
@@ -111,6 +126,20 @@ const Chat = () => {
       toast.error("Erro ao conectar com o Orion");
     }
   };
+
+  useEffect(() => {
+    if (promptAppliedRef.current) return;
+    const prompt = searchParams.get("prompt");
+    if (!prompt) return;
+    const withContext = searchParams.get("context") === "central"
+      ? `[Contexto: Central Orion]\n${prompt}`
+      : prompt;
+    promptAppliedRef.current = true;
+    setInput(withContext);
+    if (searchParams.get("autoSend") === "true") {
+      void handleSend(withContext);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasNoDNA = !dna?.onboarding_completed;
 

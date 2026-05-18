@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import orionLogo from "@/assets/orion-logo.png";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -6,8 +6,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { startEmployeeTour, startOwnerTour } from "@/lib/tours";
+import { modeForRole, normalizeOrionRole, type OrionMode } from "@/lib/productRoles";
 import {
   LayoutDashboard,
   CheckCircle2,
@@ -25,6 +27,18 @@ import {
   BrainCircuit,
   PlayCircle,
   Menu,
+  GitBranch,
+  Contact,
+  FileText,
+  Target,
+  Radar,
+  UserRoundSearch,
+  BadgeCheck,
+  ShieldCheck,
+  Settings,
+  Orbit,
+  Building2,
+  Network,
 } from "lucide-react";
 
 interface NavItem {
@@ -33,25 +47,46 @@ interface NavItem {
   icon: any;
   badge?: number;
   ownerOnly?: boolean;
+  modes?: OrionMode[];
   tour: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, tour: "dashboard" },
-  { path: "/cerebro", label: "Cérebro", icon: BrainCircuit, tour: "cerebro" },
-  { path: "/diagnostico", label: "Diagnóstico", icon: Sparkles, tour: "diagnostico", ownerOnly: true },
-  { path: "/decisoes", label: "Decisões IA", icon: Zap, tour: "decisoes", ownerOnly: true },
-  { path: "/campaigns", label: "Campanhas", icon: Megaphone, tour: "campaigns" },
-  { path: "/calendar", label: "Cronograma", icon: CalendarDays, tour: "calendar" },
-  { path: "/tasks", label: "Tarefas", icon: ListTodo, tour: "tasks" },
-  { path: "/approvals", label: "Aprovações", icon: CheckCircle2, badge: 3, tour: "approvals", ownerOnly: true },
-  { path: "/studio", label: "Estúdio", icon: Palette, tour: "studio" },
-  { path: "/chat", label: "Chat", icon: MessageSquare, tour: "chat" },
-  { path: "/team", label: "Equipe", icon: Users, tour: "team", ownerOnly: true },
+  { path: "/central", label: "Central Orion", icon: Orbit, tour: "central", modes: ["owner", "manager", "agency"] },
+  { path: "/clientes", label: "Contas", icon: Building2, tour: "accounts", modes: ["agency"] },
+  { path: "/decisoes", label: "Insights", icon: Zap, tour: "insights", modes: ["manager"] },
+  { path: "/onboarding", label: "Company DNA", icon: Brain, tour: "onboarding", ownerOnly: true, modes: ["owner"] },
+  { path: "/clientes", label: "CRM", icon: Contact, tour: "clientes", modes: ["owner"] },
+  { path: "/campaigns", label: "Campanhas", icon: Megaphone, tour: "campaigns", modes: ["owner", "manager", "agency"] },
+  { path: "/calendar", label: "Calendário", icon: CalendarDays, tour: "calendar", modes: ["owner"] },
+  { path: "/studio", label: "Criativos e Mídia", icon: Palette, tour: "studio", modes: ["owner"] },
+  { path: "/brand-identity", label: "Marca", icon: BadgeCheck, tour: "brand-identity", ownerOnly: true, modes: ["owner"] },
+  { path: "/tasks", label: "Tarefas", icon: ListTodo, tour: "tasks", modes: ["owner"] },
+  { path: "/internal-structure", label: "Estrutura Interna", icon: Network, tour: "internal-structure", ownerOnly: true, modes: ["owner"] },
+  { path: "/cerebro", label: "Base Estratégica", icon: BrainCircuit, tour: "cerebro", modes: ["owner"] },
+  { path: "/approvals", label: "Aprovações", icon: CheckCircle2, tour: "approvals", ownerOnly: true, modes: ["owner", "agency"] },
+  { path: "/executive-report", label: "Relatórios", icon: FileText, tour: "executive-report", ownerOnly: true, modes: ["owner", "manager", "agency"] },
+  { path: "/chat", label: "Chat Estratégico", icon: MessageSquare, tour: "chat", modes: ["owner"] },
+  { path: "/studio", label: "Criativos e Mídia", icon: Palette, tour: "studio", modes: ["manager"] },
+  { path: "/studio", label: "Criação", icon: Palette, tour: "studio", modes: ["agency"] },
+  { path: "/funnels", label: "Funis", icon: GitBranch, tour: "funnels", modes: ["manager"] },
+  { path: "/calendar", label: "Calendário", icon: CalendarDays, tour: "calendar", modes: ["manager"] },
+  { path: "/tasks", label: "Tarefas", icon: ListTodo, tour: "tasks", modes: ["manager"] },
+  { path: "/clientes", label: "CRM", icon: Contact, tour: "clientes", modes: ["manager"] },
+  { path: "/team", label: "Equipe", icon: Users, tour: "team", ownerOnly: true, modes: ["agency"] },
+  { path: "/governance", label: "Governança", icon: ShieldCheck, tour: "governance", ownerOnly: true, modes: ["agency"] },
 ];
 const BOTTOM_ITEMS: NavItem[] = [
-  { path: "/integrations", label: "Integrações", icon: Plug, tour: "integrations", ownerOnly: true },
-  { path: "/onboarding", label: "Company DNA", icon: Brain, tour: "onboarding", ownerOnly: true },
+  { path: "/dashboard", label: "Dashboard legado", icon: LayoutDashboard, tour: "dashboard", modes: ["manager", "agency"] },
+  { path: "/diagnostico", label: "Diagnóstico", icon: Sparkles, tour: "diagnostico", ownerOnly: true, modes: ["manager"] },
+  { path: "/strategy", label: "Estratégia", icon: Target, tour: "strategy", ownerOnly: true, modes: ["manager"] },
+  { path: "/intelligence", label: "Radar", icon: Radar, tour: "intelligence", ownerOnly: true, modes: ["manager"] },
+  { path: "/cerebro", label: "Base Estratégica", icon: BrainCircuit, tour: "cerebro", modes: ["manager", "agency"] },
+  { path: "/personas", label: "Personas", icon: UserRoundSearch, tour: "personas", ownerOnly: true, modes: ["manager"] },
+  { path: "/brand-identity", label: "Marca", icon: BadgeCheck, tour: "brand-identity", ownerOnly: true, modes: ["manager", "agency"] },
+  { path: "/integrations", label: "Integrações", icon: Plug, tour: "integrations", ownerOnly: true, modes: ["manager", "agency"] },
+  { path: "/onboarding", label: "Company DNA", icon: Brain, tour: "onboarding", ownerOnly: true, modes: ["manager"] },
+  { path: "/settings", label: "Configurações", icon: Settings, tour: "settings", ownerOnly: true, modes: ["owner", "manager", "agency"] },
 ];
 
 interface AppLayoutProps {
@@ -83,7 +118,7 @@ const SidebarBody = ({
         const isActive = pathname === item.path;
         return (
           <Link
-            key={item.path}
+            key={`${item.path}-${item.tour}`}
             to={item.path}
             data-tour={`nav-${item.tour}`}
             onClick={onNavigate}
@@ -111,7 +146,7 @@ const SidebarBody = ({
         const isActive = pathname === item.path;
         return (
           <Link
-            key={item.path}
+            key={`${item.path}-${item.tour}`}
             to={item.path}
             data-tour={`nav-${item.tour}`}
             onClick={onNavigate}
@@ -155,14 +190,41 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { isOwner, isAdmin } = useUserRole();
+  const { role, isOwner, isAdmin } = useUserRole();
   const { completeTour } = useUserPreferences();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
 
-  const canSeeOwnerOnly = isOwner || isAdmin;
-  const visibleTop = NAV_ITEMS.filter((i) => !i.ownerOnly || canSeeOwnerOnly);
-  const visibleBottom = BOTTOM_ITEMS.filter((i) => !i.ownerOnly || canSeeOwnerOnly);
+  const productRole = normalizeOrionRole(role);
+  const productMode = modeForRole(productRole);
+  const canSeeOwnerOnly = isOwner || isAdmin || productRole === "agency_admin" || productRole === "client_viewer";
+  const byMode = (item: NavItem) => !item.modes || item.modes.includes(productMode);
+  const visibleTop = NAV_ITEMS.filter((i) => byMode(i) && (!i.ownerOnly || canSeeOwnerOnly));
+  const visibleBottom = BOTTOM_ITEMS.filter((i) => byMode(i) && (!i.ownerOnly || canSeeOwnerOnly));
+
+  useEffect(() => {
+    if (!user || !canSeeOwnerOnly) {
+      setPendingApprovals(0);
+      return;
+    }
+
+    let cancelled = false;
+    supabase
+      .from("approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .then(({ count, error }) => {
+        if (!cancelled && !error) setPendingApprovals(count || 0);
+      });
+
+    return () => { cancelled = true; };
+  }, [user, canSeeOwnerOnly]);
+
+  const topWithBadges = visibleTop.map((item) => (
+    item.path === "/approvals" ? { ...item, badge: pendingApprovals || undefined } : item
+  ));
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuário";
   const initials = displayName
@@ -188,7 +250,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       {!isMobile && (
         <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
           <SidebarBody
-            visibleTop={visibleTop}
+            visibleTop={topWithBadges}
             visibleBottom={visibleBottom}
             pathname={location.pathname}
             initials={initials}
@@ -215,7 +277,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 bg-card border-border">
                 <SidebarBody
-                  visibleTop={visibleTop}
+                  visibleTop={topWithBadges}
                   visibleBottom={visibleBottom}
                   pathname={location.pathname}
                   initials={initials}

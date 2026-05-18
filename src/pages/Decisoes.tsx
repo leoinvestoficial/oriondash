@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Sparkles, Database, Check, X, TrendingUp, Pause, Palette, Users, DollarSign, ListTodo, FileText, Bell, Beaker, Target } from "lucide-react";
 import { useDecisions, type DecisionAction, type DecisionRecord } from "@/hooks/useDecisions";
+import { useActionOrchestrations } from "@/hooks/useActionOrchestrations";
 import { PageHelpBanner } from "@/components/help/PageHelpBanner";
 import { PAGE_HELP } from "@/lib/pageHelp";
 
@@ -115,6 +116,7 @@ const DecisionCard = ({ d, onApply, onDismiss, busy }: {
   d: DecisionRecord;
   onApply: (id: string) => void;
   onDismiss: (id: string) => void;
+  onPrepare: (decision: DecisionRecord) => void;
   busy: boolean;
 }) => {
   const meta = ACTION_META[d.action_type] || ACTION_META.alert_only;
@@ -188,6 +190,10 @@ const DecisionCard = ({ d, onApply, onDismiss, busy }: {
             <X className="w-4 h-4 mr-1" />
             Descartar
           </Button>
+          <Button size="sm" variant="outline" onClick={() => onPrepare(d)} disabled={busy}>
+            <ListTodo className="w-4 h-4 mr-1" />
+            Preparar orquestração
+          </Button>
         </div>
       )}
     </Card>
@@ -196,9 +202,28 @@ const DecisionCard = ({ d, onApply, onDismiss, busy }: {
 
 const Decisoes = () => {
   const { decisions, executiveRead, loading, generating, seeding, applyingId, generate, seedMocks, apply, dismiss } = useDecisions();
+  const { create: createOrchestration } = useActionOrchestrations();
 
   const pending = useMemo(() => decisions.filter((d) => d.status === "pending"), [decisions]);
   const handled = useMemo(() => decisions.filter((d) => d.status !== "pending"), [decisions]);
+  const prepareDecision = async (decision: DecisionRecord) => {
+    await createOrchestration({
+      title: decision.title,
+      description: decision.rationale,
+      source_type: "ai_decision",
+      source_id: decision.id,
+      detected_signal: decision.evidence,
+      hypothesis: decision.rationale,
+      recommended_action: ACTION_META[decision.action_type]?.label || decision.action_type,
+      financial_impact_estimate: decision.expected_impact,
+      urgency: decision.severity,
+      confidence_score: 82,
+      autonomy_level: "assisted_execution",
+      status: "prepared",
+      related_campaign_id: decision.campaign_id,
+      data_origin: "inferred",
+    });
+  };
 
   return (
     <AppLayout>
@@ -276,7 +301,7 @@ const Decisoes = () => {
             </div>
             <div className="space-y-3">
               {pending.map((d) => (
-                <DecisionCard key={d.id} d={d} onApply={apply} onDismiss={dismiss} busy={applyingId === d.id} />
+                <DecisionCard key={d.id} d={d} onApply={apply} onDismiss={dismiss} onPrepare={prepareDecision} busy={applyingId === d.id} />
               ))}
             </div>
           </div>
@@ -287,7 +312,7 @@ const Decisoes = () => {
             <h2 className="text-heading text-foreground mb-4">Histórico</h2>
             <div className="space-y-3">
               {handled.map((d) => (
-                <DecisionCard key={d.id} d={d} onApply={apply} onDismiss={dismiss} busy={false} />
+                <DecisionCard key={d.id} d={d} onApply={apply} onDismiss={dismiss} onPrepare={prepareDecision} busy={false} />
               ))}
             </div>
           </div>

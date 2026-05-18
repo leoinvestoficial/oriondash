@@ -1,16 +1,22 @@
 import { supabase } from "@/integrations/supabase/client";
+import { chatFunctionName } from "./aiFlags";
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+// Resolvido em runtime pra que mudanças de flag (env / user pref) tenham efeito sem rebuild.
+const getChatUrl = () => `${SUPABASE_URL}/functions/v1/${chatFunctionName()}`;
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
+export type ChatContextPayload = Record<string, unknown>;
 
 export async function streamChat({
   messages,
+  context,
   onDelta,
   onDone,
   onError,
 }: {
   messages: ChatMessage[];
+  context?: ChatContextPayload;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -23,14 +29,14 @@ export async function streamChat({
     return;
   }
 
-  const resp = await fetch(CHAT_URL, {
+  const resp = await fetch(getChatUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, context }),
   });
 
   if (!resp.ok) {

@@ -31,7 +31,7 @@ export interface MetricsSnapshot {
   ctr?: number;
   roas?: number;
   roi_pct?: number;
-  [k: string]: any;
+  [k: string]: unknown;
 }
 
 export interface DecisionRecord {
@@ -49,9 +49,9 @@ export interface DecisionRecord {
     audience_variants?: AudienceVariant[];
     creative_variants?: CreativeVariant[];
     task_steps?: string[];
-    [k: string]: any;
+    [k: string]: unknown;
   };
-  result: Record<string, any>;
+  result: Record<string, unknown>;
   created_at: string;
   applied_at: string | null;
 }
@@ -64,6 +64,22 @@ export const useDecisions = () => {
   const [generating, setGenerating] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
+
+  interface InterpretMetricsResponse {
+    error?: string;
+    executive_read?: string;
+    decisions?: unknown[];
+  }
+
+  interface SeedResponse {
+    error?: string;
+    metrics_inserted?: number;
+    campaigns_created?: number;
+  }
+
+  interface ApplyResponse {
+    error?: string;
+  }
 
   const fetchAll = useCallback(async () => {
     if (!user) { setLoading(false); return; }
@@ -82,29 +98,41 @@ export const useDecisions = () => {
 
   const generate = async () => {
     setGenerating(true);
+    const slowNotice = window.setTimeout(() => {
+      toast.info("A leitura de métricas está demorando mais que o normal. O Orion continua tentando concluir.");
+    }, 12000);
     try {
-      const { data, error } = await supabase.functions.invoke("interpret-metrics", { body: {} });
+      const invoke = supabase.functions.invoke("interpret-metrics", { body: {} });
+      const timeout = new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error("Tempo limite ao gerar decisões. Tente novamente em instantes.")), 150000);
+      });
+      const { data, error } = await Promise.race([invoke, timeout]);
       if (error) {
-        const msg = (error as any)?.context?.error || error.message;
+        const msg = (error as { context?: { error?: string } })?.context?.error || error.message;
         toast.error(msg || "Falha ao gerar decisões");
         return;
       }
-      if ((data as any)?.error) { toast.error((data as any).error); return; }
-      setExecutiveRead((data as any)?.executive_read || "");
-      toast.success(`${(data as any)?.decisions?.length || 0} decisões geradas`);
+      if ((data as InterpretMetricsResponse)?.error) { toast.error((data as InterpretMetricsResponse).error); return; }
+      setExecutiveRead((data as InterpretMetricsResponse)?.executive_read || "");
+      toast.success(`${(data as InterpretMetricsResponse)?.decisions?.length || 0} decisões geradas`);
       await fetchAll();
-    } finally { setGenerating(false); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao gerar decisões");
+    } finally {
+      window.clearTimeout(slowNotice);
+      setGenerating(false);
+    }
   };
 
   const seedMocks = async () => {
     setSeeding(true);
     try {
       const { data, error } = await supabase.functions.invoke("seed-mock-metrics", { body: {} });
-      if (error || (data as any)?.error) {
-        toast.error(((data as any)?.error) || error?.message || "Falha no seeder");
+      if (error || (data as SeedResponse)?.error) {
+        toast.error(((data as SeedResponse)?.error) || error?.message || "Falha no seeder");
         return;
       }
-      toast.success(`Mock pronto: ${(data as any).metrics_inserted} métricas em ${(data as any).campaigns_created || 4} campanhas`);
+      toast.success(`Mock pronto: ${(data as SeedResponse).metrics_inserted} métricas em ${(data as SeedResponse).campaigns_created || 4} campanhas`);
     } finally { setSeeding(false); }
   };
 
@@ -112,8 +140,8 @@ export const useDecisions = () => {
     setApplyingId(id);
     try {
       const { data, error } = await supabase.functions.invoke("apply-decision", { body: { decision_id: id } });
-      if (error || (data as any)?.error) {
-        toast.error(((data as any)?.error) || error?.message || "Falha ao aplicar");
+      if (error || (data as ApplyResponse)?.error) {
+        toast.error(((data as ApplyResponse)?.error) || error?.message || "Falha ao aplicar");
         return;
       }
       toast.success("Decisão aplicada");

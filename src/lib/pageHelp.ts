@@ -45,6 +45,28 @@ export const PAGE_HELP: Record<string, PageHelpContent> = {
       "Cada decisão tem severidade, evidência e impacto esperado",
     ],
   },
+  strategy: {
+    id: "help-strategy",
+    title: "Estratégia — Metas e hipóteses do próximo ciclo",
+    description:
+      "Espaço para transformar o Company DNA e as métricas em direção prática: metas, hipóteses, prioridades e backlog estratégico do próximo ciclo de marketing.",
+    bullets: [
+      "Cadastre metas estratégicas com owner e horizonte",
+      "Organize hipóteses por canal, público e criativo",
+      "Use este backlog como base para decisões, campanhas e briefs",
+    ],
+  },
+  intelligence: {
+    id: "help-intelligence",
+    title: "Intelligence — Mercado, concorrentes e benchmarks",
+    description:
+      "Camada de contexto externo do Orion. Aqui você registra concorrentes, sinais de mercado e benchmarks para que estratégia, decisões e criativos saiam menos genéricos.",
+    bullets: [
+      "Mapeie concorrentes e entenda onde sua marca precisa se diferenciar",
+      "Registre sinais de mercado com implicação e ação recomendada",
+      "Compare métricas atuais com benchmarks para enxergar gaps prioritários",
+    ],
+  },
   campaigns: {
     id: "help-campaigns",
     title: "Campanhas — Gestão das suas campanhas pagas",
@@ -131,6 +153,28 @@ export const PAGE_HELP: Record<string, PageHelpContent> = {
       "Conexão OAuth segura — credenciais nunca expostas",
       "Sincronização automática diária",
       "Necessário para 'Decisões IA' funcionarem com dados reais",
+    ],
+  },
+  personas: {
+    id: "help-personas",
+    title: "Personas — Conheça seu cliente ideal",
+    description:
+      "Personas são perfis detalhados dos seus clientes ideais, gerados por IA com base no Company DNA. Use para guiar campanhas, copies e estratégias de segmentação.",
+    bullets: [
+      "Gerado automaticamente com base no DNA da marca",
+      "Inclui dores, motivações, canais preferidos e gatilhos de compra",
+      "Regenere sempre que atualizar o Company DNA",
+    ],
+  },
+  clientes: {
+    id: "help-clientes",
+    title: "Clientes — CRM inteligente de pós-venda",
+    description:
+      "Acompanhe sua base de clientes, segmentos automáticos e oportunidades de recompra, recuperação de carrinho e winback geradas por IA diariamente.",
+    bullets: [
+      "Segmentos automáticos: recompra provável, carrinho abandonado, winback",
+      "Oportunidades com mensagem pronta para envio",
+      "Timeline de eventos por cliente",
     ],
   },
   onboarding: {
