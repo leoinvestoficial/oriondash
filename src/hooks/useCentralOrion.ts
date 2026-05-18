@@ -299,7 +299,7 @@ export const useCentralOrion = (): CentralOrionData => {
 
   const priority: CentralPriority = useMemo(() => {
     if (primaryDecision) {
-      const waste = finance.wastedSpendEstimate > 0 ? `Risco de desperdicio de ${fmtCurrency(finance.wastedSpendEstimate)} se o ritmo continuar.` : primaryDecision.expected_impact;
+      const waste = finance.wastedSpendEstimate > 0 ? `Risco de desperdício de ${fmtCurrency(finance.wastedSpendEstimate)} se o ritmo continuar.` : primaryDecision.expected_impact;
       return {
         title: primaryDecision.title,
         type: primaryDecision.action_type.includes("budget") ? "financeiro" : primaryDecision.action_type.includes("creative") ? "criativo" : "campanha",
@@ -307,11 +307,11 @@ export const useCentralOrion = (): CentralOrionData => {
         evidence: primaryDecision.evidence || "Baseado no snapshot recente de performance.",
         financialImpact: waste,
         urgency: severityFromDecision(primaryDecision),
-        confidenceScore: 82,
+        confidenceScore: (primaryDecision as any).confidence_score ?? 82,
         dataSource,
         autonomyLevel: "assisted_execution",
-        recommendedAction: primaryDecision.expected_impact || "Transformar recomendacao em execucao assistida.",
-        ctaLabel: primaryDecision.action_type.includes("creative") || primaryDecision.action_type === "refresh_creative" ? "Gerar criativos" : "Aplicar decisao",
+        recommendedAction: primaryDecision.expected_impact || "Transformar recomendação em execução assistida.",
+        ctaLabel: primaryDecision.action_type.includes("creative") || primaryDecision.action_type === "refresh_creative" ? "Gerar criativos" : "Aplicar decisão",
         ctaHref: primaryDecision.action_type.includes("creative") || primaryDecision.action_type === "refresh_creative" ? "/studio" : "/decisoes",
         relatedDecisionId: primaryDecision.id,
         relatedCampaignId: primaryDecision.campaign_id,
@@ -328,15 +328,15 @@ export const useCentralOrion = (): CentralOrionData => {
       return {
         title: "CPA acima do alvo definido",
         type: "financeiro",
-        reason: "O custo por aquisicao atual passou do limite informado nas metricas de negocio.",
+        reason: "O custo por aquisição atual passou do limite informado nas métricas de negócio.",
         evidence: `CPA atual ${fmtCurrency(finance.actualCpa)} vs alvo ${fmtCurrency(finance.targetCpa)}.`,
-        financialImpact: finance.wastedSpendEstimate > 0 ? `Desperdicio estimado de ${fmtCurrency(finance.wastedSpendEstimate)}.` : "Impacto financeiro estimado depende de margem e conversoes.",
+        financialImpact: finance.wastedSpendEstimate > 0 ? `Desperdício estimado de ${fmtCurrency(finance.wastedSpendEstimate)}.` : "Impacto financeiro estimado depende de margem e conversões.",
         urgency: "alta",
         confidenceScore: 78,
         dataSource,
         autonomyLevel: "insight_only",
         recommendedAction: "Revisar campanha, oferta e criativos antes de aumentar verba.",
-        ctaLabel: "Criar plano de correcao",
+        ctaLabel: "Criar plano de correção",
         ctaHref: "/decisoes",
         secondaryActions: [
           { label: "Criar tarefa", action: "create_task" },
@@ -348,17 +348,17 @@ export const useCentralOrion = (): CentralOrionData => {
 
     if (pendingApprovals.length > 0) {
       return {
-        title: "Aprovacoes pendentes travando execucao",
+        title: "Aprovações pendentes travando execução",
         type: "aprovação",
-        reason: "Ha itens aguardando decisao humana para o marketing continuar andando.",
-        evidence: `${pendingApprovals.length} aprovacao(oes) pendente(s).`,
-        financialImpact: "Atrasos de aprovacao podem segurar testes, criativos e campanhas.",
+        reason: "Há itens aguardando decisão humana para o marketing continuar andando.",
+        evidence: `${pendingApprovals.length} aprovação(ões) pendente(s).`,
+        financialImpact: "Atrasos de aprovação podem segurar testes, criativos e campanhas.",
         urgency: "media",
         confidenceScore: 88,
         dataSource,
         autonomyLevel: "insight_only",
         recommendedAction: "Revisar e aprovar ou pedir ajuste nos itens pendentes.",
-        ctaLabel: "Revisar aprovacoes",
+        ctaLabel: "Revisar aprovações",
         ctaHref: "/approvals",
         secondaryActions: [
           { label: "Ver contexto", href: "/approvals" },
@@ -368,17 +368,17 @@ export const useCentralOrion = (): CentralOrionData => {
     }
 
     return {
-      title: "Definir a proxima aposta da semana",
+      title: "Definir a próxima aposta da semana",
       type: metrics?.hasData ? "oportunidade" : "dados",
-      reason: "Nao ha decisao critica pendente; o melhor ganho agora e transformar dados em uma acao priorizada.",
-      evidence: metrics?.hasData ? "Metricas recentes disponiveis para leitura executiva." : "Ainda faltam dados reais conectados.",
-      financialImpact: metrics?.hasData ? `Receita atribuida recente de ${fmtCurrency(metrics.totalRevenue)}.` : "Impacto financeiro sera mais preciso ao conectar dados reais.",
+      reason: "Não há decisão crítica pendente; o melhor ganho agora é transformar dados em uma ação priorizada.",
+      evidence: metrics?.hasData ? "Métricas recentes disponíveis para leitura executiva." : "Ainda faltam dados reais conectados.",
+      financialImpact: metrics?.hasData ? `Receita atribuída recente de ${fmtCurrency(metrics.totalRevenue)}.` : "Impacto financeiro será mais preciso ao conectar dados reais.",
       urgency: "media",
       confidenceScore: metrics?.hasData ? 72 : 55,
       dataSource,
       autonomyLevel: "insight_only",
-      recommendedAction: metrics?.hasData ? "Gerar decisoes IA a partir das metricas." : "Conectar dados ou completar metricas de negocio.",
-      ctaLabel: metrics?.hasData ? "Gerar decisoes" : "Conectar dados",
+      recommendedAction: metrics?.hasData ? "Gerar decisões IA a partir das métricas." : "Conectar dados ou completar métricas de negócio.",
+      ctaLabel: metrics?.hasData ? "Gerar decisões" : "Conectar dados",
       ctaHref: metrics?.hasData ? "/decisoes" : "/integrations",
       secondaryActions: [
         { label: "Criar tarefa", action: "create_task" },
@@ -398,8 +398,8 @@ export const useCentralOrion = (): CentralOrionData => {
         expectedImpact: primaryDecision.expected_impact,
         suggestedOwner: "Gestor de marketing",
         suggestedDueDate: dueLabelInDays(2),
-        confidenceScore: 82,
-        ctaLabel: "Abrir decisao",
+        confidenceScore: (primaryDecision as any).confidence_score ?? 82,
+        ctaLabel: "Abrir decisão",
         ctaHref: "/decisoes",
         sourceId: primaryDecision.id,
         relatedCampaignId: primaryDecision.campaign_id,
@@ -408,10 +408,10 @@ export const useCentralOrion = (): CentralOrionData => {
     if (pendingApprovals.length > 0) {
       actions.push({
         id: "approvals",
-        name: "Destravar aprovacoes pendentes",
+        name: "Destravar aprovações pendentes",
         type: "approval",
-        reason: "Aprovacoes pendentes bloqueiam execucao e atrasam campanhas.",
-        expectedImpact: "Reduzir atraso de execucao e liberar proximos testes.",
+        reason: "Aprovações pendentes bloqueiam execução e atrasam campanhas.",
+        expectedImpact: "Reduzir atraso de execução e liberar próximos testes.",
         suggestedOwner: "Dono ou cliente",
         suggestedDueDate: "Hoje",
         confidenceScore: 88,
@@ -424,23 +424,23 @@ export const useCentralOrion = (): CentralOrionData => {
       name: "Gerar resumo executivo da semana",
       type: "report",
       reason: "Alinhar decisores reduz ruído e acelera a próxima ação.",
-      expectedImpact: "Alinhar dono, equipe e agencia sobre resultado e proximo passo.",
+      expectedImpact: "Alinhar dono, equipe e agência sobre resultado e próximo passo.",
       suggestedOwner: "Orion",
       suggestedDueDate: dueLabelInDays(5),
       confidenceScore: 74,
-      ctaLabel: "Gerar relatorio",
+      ctaLabel: "Gerar relatório",
       ctaHref: "/executive-report",
     });
     actions.push({
       id: "studio",
-      name: "Preparar variacao baseada em aprendizado recente",
+      name: "Preparar variação baseada em aprendizado recente",
       type: "creative",
       reason: "Criativos novos reduzem risco de fadiga e destravam testes.",
       expectedImpact: "Aumentar chance de recuperar CTR sem reinventar a campanha.",
       suggestedOwner: "Designer / Social",
       suggestedDueDate: dueLabelInDays(3),
       confidenceScore: 68,
-      ctaLabel: "Abrir Estudio",
+      ctaLabel: "Abrir Estúdio",
       ctaHref: "/studio",
     });
     return actions.slice(0, 3);
@@ -454,7 +454,7 @@ export const useCentralOrion = (): CentralOrionData => {
         title: "CPA acima do alvo",
         description: `CPA atual ${fmtCurrency(finance.actualCpa)} passou do alvo ${fmtCurrency(finance.targetCpa)}.`,
         severity: "alta",
-        ctaLabel: "Ver decisao",
+        ctaLabel: "Ver decisão",
         ctaHref: "/decisoes",
       });
     }
@@ -462,7 +462,7 @@ export const useCentralOrion = (): CentralOrionData => {
       list.push({
         id: "budget-pacing",
         title: "Verba acelerada",
-        description: "O gasto esta acima do ritmo planejado para o periodo.",
+        description: "O gasto está acima do ritmo planejado para o período.",
         severity: "media",
         ctaLabel: "Revisar verba",
         ctaHref: "/campaigns",
@@ -471,8 +471,8 @@ export const useCentralOrion = (): CentralOrionData => {
     if (pendingApprovals.length > 0) {
       list.push({
         id: "pending-approvals",
-        title: "Aprovacao pendente",
-        description: `${pendingApprovals.length} item(ns) aguardam revisao.`,
+        title: "Aprovação pendente",
+        description: `${pendingApprovals.length} item(ns) aguardam revisão.`,
         severity: "media",
         ctaLabel: "Resolver",
         ctaHref: "/approvals",
@@ -482,7 +482,7 @@ export const useCentralOrion = (): CentralOrionData => {
       list.push({
         id: "missing-data",
         title: "Dados reais ausentes",
-        description: "Conecte fontes ou importe dados para decisoes mais confiaveis.",
+        description: "Conecte fontes ou importe dados para decisões mais confiáveis.",
         severity: "alta",
         ctaLabel: "Conectar",
         ctaHref: "/integrations",
@@ -501,7 +501,7 @@ export const useCentralOrion = (): CentralOrionData => {
       result: campaign.roas != null ? `${campaign.roas.toFixed(2)}x ROAS` : `${campaign.conversions} conv.`,
       performanceVsGoal: campaign.cpa != null && finance.targetCpa != null
         ? campaign.cpa <= finance.targetCpa ? "Dentro da meta" : "Acima do CPA alvo"
-        : "Meta nao definida",
+        : "Meta não definida",
       recommendedAction: campaign.ctr != null && campaign.ctr < 1 ? "Trocar criativo" : campaign.roas != null && campaign.roas > (finance.targetRoas || 2) ? "Escala controlada" : "Monitorar",
     }))
   ), [finance.targetCpa, finance.targetRoas, metrics?.campaignsList]);
@@ -537,8 +537,8 @@ export const useCentralOrion = (): CentralOrionData => {
         title: row.title,
         reason: row.hypothesis || row.description || "Fluxo preparado pelo Orion.",
         evidence: row.detected_signal || "Sinal operacional detectado.",
-        impact: row.financial_impact_estimate || "Impacto em validacao.",
-        preparedAction: row.recommended_action || "Preparar execucao assistida.",
+        impact: row.financial_impact_estimate || "Impacto em validação.",
+        preparedAction: row.recommended_action || "Preparar execução assistida.",
         status: row.status || "detected",
         autonomyLevel: row.autonomy_level || "assisted_execution",
         ctaHref: row.related_approval_id ? "/approvals" : row.related_task_id ? "/tasks" : "/decisoes",
@@ -752,8 +752,8 @@ export const useCentralOrion = (): CentralOrionData => {
     dataNotice,
     score,
     scoreStatus,
-    scoreExplanation: scoreStatus === "saudavel" ? "Marketing com sinais positivos e sem bloqueio critico." : scoreStatus === "atencao" ? "Ha oportunidades claras para recuperar eficiencia." : "Ha gargalos que exigem acao imediata.",
-    scoreDeltaLabel: diagnostic ? "baseado no ultimo diagnostico" : "estimado por metricas recentes",
+    scoreExplanation: scoreStatus === "saudavel" ? "Marketing com sinais positivos e sem bloqueio crítico." : scoreStatus === "atencao" ? "Há oportunidades claras para recuperar eficiência." : "Há gargalos que exigem ação imediata.",
+    scoreDeltaLabel: diagnostic ? "baseado no último diagnóstico" : "estimado por métricas recentes",
     priority,
     weeklyActions,
     alerts,
