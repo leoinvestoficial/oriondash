@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Send, Sparkles, BarChart3, Lightbulb, Brain, ListTodo, FileText, CheckCircle2 } from "lucide-react";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { streamChat, ChatMessage } from "@/lib/chatStream";
 import { parseActions, executeAction } from "@/lib/chatActions";
-import { useCompanyDNA } from "@/hooks/useCompanyDNA";
+import { useCompanyDNA, type CompanyDNARecord } from "@/hooks/useCompanyDNA";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOrionViewMode } from "@/hooks/useOrionViewMode";
 import { buildCentralChatContext, type CentralChatContext } from "@/lib/centralChatContext";
@@ -18,18 +18,52 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { PageHelpBanner } from "@/components/help/PageHelpBanner";
 import { PAGE_HELP } from "@/lib/pageHelp";
 
-const SUGGESTIONS = [
+const STATIC_SUGGESTIONS = [
   { icon: BarChart3, text: "Monte um planejamento de marketing para os próximos 3 meses" },
   { icon: ListTodo, text: "Crie tarefas para minha equipe baseado nas prioridades atuais" },
   { icon: Lightbulb, text: "Quais canais fazem mais sentido para o meu negócio?" },
   { icon: Sparkles, text: "Crie uma proposta de campanha e envie para aprovação" },
 ];
 
+const buildDynamicSuggestions = (dna: CompanyDNARecord | null) => {
+  if (!dna?.onboarding_completed || !dna?.company_name) return STATIC_SUGGESTIONS;
+  const goals = (dna.dna_data?.goalsConstraints as Record<string, string> | undefined);
+  const identity = (dna.dna_data?.identity as Record<string, string> | undefined);
+  const primaryGoal = goals?.primary_goal;
+  const sector = identity?.sector;
+  const name = dna.company_name;
+  return [
+    {
+      icon: BarChart3,
+      text: primaryGoal
+        ? `Monte um plano de marketing para ${name} focado em: ${primaryGoal}`
+        : `Monte um planejamento de marketing para ${name} nos próximos 3 meses`,
+    },
+    {
+      icon: ListTodo,
+      text: "Crie tarefas para minha equipe baseado nas prioridades atuais",
+    },
+    {
+      icon: Lightbulb,
+      text: sector
+        ? `Quais canais fazem mais sentido para empresas de ${sector}?`
+        : `Quais canais fazem mais sentido para ${name}?`,
+    },
+    {
+      icon: Sparkles,
+      text: primaryGoal
+        ? `Crie uma campanha voltada para ${primaryGoal} e envie para aprovação`
+        : "Crie uma proposta de campanha e envie para aprovação",
+    },
+  ];
+};
+
 const Chat = () => {
   const { user } = useAuth();
   const { dna } = useCompanyDNA();
   const { role } = useUserRole();
   const { viewMode } = useOrionViewMode();
+  const suggestions = useMemo(() => buildDynamicSuggestions(dna), [dna]);
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -199,7 +233,7 @@ const Chat = () => {
           ref={scrollRef}
           messages={messages}
           isStreaming={isStreaming}
-          suggestions={messages.length === 0 ? SUGGESTIONS : undefined}
+          suggestions={messages.length === 0 ? suggestions : undefined}
           onSuggestionClick={handleSend}
         />
 

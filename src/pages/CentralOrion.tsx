@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +29,68 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
+
+// ─── Pro view tab bar ────────────────────────────────────────────────────────
+
+const PRO_TABS = [
+  { id: "pro-prioridade",  label: "Prioridade",   icon: Target },
+  { id: "pro-operacao",    label: "Operação",      icon: PlayCircle },
+  { id: "pro-aprovacoes",  label: "Aprovações",    icon: ClipboardCheck },
+  { id: "pro-publicacoes", label: "Publicações",   icon: CalendarClock },
+  { id: "pro-campanhas",   label: "Campanhas",     icon: Megaphone },
+  { id: "pro-aprendizados",label: "Aprendizados",  icon: Lightbulb },
+] as const;
+
+type ProTabId = typeof PRO_TABS[number]["id"];
+
+const ProTabBar = () => {
+  const [active, setActive] = useState<ProTabId>("pro-prioridade");
+
+  const scrollTo = useCallback((id: ProTabId) => {
+    setActive(id);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  // Highlight active tab based on scroll position
+  useEffect(() => {
+    const ids = PRO_TABS.map((t) => t.id);
+    const handler = () => {
+      for (const id of [...ids].reverse()) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 120) {
+          setActive(id);
+          return;
+        }
+      }
+      setActive(ids[0]);
+    };
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
+
+  return (
+    <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 bg-background/95 backdrop-blur border-b border-border px-4 sm:px-6 py-0">
+      <div className="flex gap-0 overflow-x-auto scrollbar-none">
+        {PRO_TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => scrollTo(id)}
+            className={cn(
+              "flex items-center gap-1.5 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+              active === id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const urgencyClass = (urgency: CentralUrgency) => {
   if (urgency === "alta") return "bg-destructive/15 text-destructive border-destructive/30";
@@ -268,6 +330,7 @@ const CentralOrion = () => {
       ) : (
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
+          <ProTabBar />
           <header className="rounded-xl border border-border bg-card p-4 sm:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -278,7 +341,7 @@ const CentralOrion = () => {
                 </div>
                 <h1 className="text-display text-foreground">Central Orion</h1>
                 <p className="text-sm text-muted-foreground">
-                  {data.companyName ? `${data.companyName} — ` : ""}Detectar, decidir, executar e aprender em um so lugar.
+                  {data.companyName ? `${data.companyName} — ` : ""}Detectar, decidir, executar e aprender em um só lugar.
                 </p>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center sm:min-w-[460px]">
@@ -312,14 +375,14 @@ const CentralOrion = () => {
             )}
           </header>
 
-          <Card className="border-primary/30 bg-primary/5 p-5">
+          <Card id="pro-prioridade" className="scroll-mt-14 border-primary/30 bg-primary/5 p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg orion-gradient text-primary-foreground">
                     <Target className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-xs font-mono text-muted-foreground">PRIORIDADE NUMERO 1</p>
+                    <p className="text-xs font-mono text-muted-foreground">PRIORIDADE NÚMERO 1</p>
                     <h2 className="text-xl font-semibold text-foreground">{data.priority.title}</h2>
                   </div>
                 </div>
@@ -383,7 +446,7 @@ const CentralOrion = () => {
               </div>
             </Card>
 
-          <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+          <div id="pro-operacao" className="scroll-mt-14 grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
             <MarketingFinanceSummary finance={data.finance} onConfigure={() => setFinanceOpen(true)} />
 
             <Card className="border-border bg-card p-5">
@@ -419,7 +482,7 @@ const CentralOrion = () => {
             </Card>
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+          <div id="pro-aprovacoes" className="scroll-mt-14 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
             <Card className="border-border bg-card p-5">
               <SectionHeader kicker="APROVAÇÕES" title="Bloqueios operacionais" />
               <div className="space-y-2">
@@ -475,7 +538,7 @@ const CentralOrion = () => {
             </Card>
           </div>
 
-          <Card className="border-border bg-card p-5">
+          <Card id="pro-publicacoes" className="scroll-mt-14 border-border bg-card p-5">
             <SectionHeader kicker="PUBLICAÇÕES E AGENDAMENTOS" title="O que está pronto para ir ao ar" />
             <div className="grid gap-3 md:grid-cols-3">
               {data.publications.length === 0 ? (
@@ -512,7 +575,7 @@ const CentralOrion = () => {
             </div>
           </Card>
 
-          <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+          <div id="pro-campanhas" className="scroll-mt-14 grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
             <div className="space-y-5">
               <Card className="border-border bg-card p-5">
                 <SectionHeader kicker="CAMPANHAS EM MOVIMENTO" title="O que está rodando agora" />
@@ -567,7 +630,7 @@ const CentralOrion = () => {
                 </div>
               </Card>
 
-              <Card className="border-border bg-card p-5">
+              <Card id="pro-aprendizados" className="scroll-mt-14 border-border bg-card p-5">
                 <SectionHeader kicker="APRENDIZADOS" title="Memória operacional recente" />
                 <div className="space-y-2">
                   {data.learnings.length === 0 ? (
