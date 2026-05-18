@@ -49,7 +49,7 @@ const AcceptInvite = () => {
       return;
     }
     toast.success("Você entrou na empresa!");
-    setTimeout(() => navigate("/dashboard"), 600);
+    setTimeout(() => navigate("/central"), 600);
   };
 
   if (loading || authLoading) {

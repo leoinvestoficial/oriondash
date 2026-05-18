@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import orionLogo from "@/assets/orion-logo.png";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ import { startEmployeeTour, startOwnerTour } from "@/lib/tours";
 import { modeForRole, normalizeOrionRole } from "@/lib/productRoles";
 import { getNavigationItems, type NavigationItem } from "@/config/navigation";
 import { ModeSwitcher } from "@/components/layout/ModeSwitcher";
-import { LogOut, PlayCircle, Menu } from "lucide-react";
+import { ChevronDown, LogOut, PlayCircle, Menu } from "lucide-react";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -74,6 +74,78 @@ const SectionDivider = ({ label }: { label: string }) => (
   </div>
 );
 
+// ─── Collapsible Pro groups ───────────────────────────────────────────────────
+const CollapsibleProGroups = ({
+  grouped,
+  pathname,
+  onNavigate,
+}: {
+  grouped: Record<string, NavigationItem[]>;
+  pathname: string;
+  onNavigate?: () => void;
+}) => {
+  // Determine which group contains the active item so we can open it by default
+  const defaultOpen = useMemo(() => {
+    const open: Record<string, boolean> = {};
+    for (const [group, items] of Object.entries(grouped)) {
+      open[group] = items.some((i) => i.path === pathname);
+    }
+    return open;
+  }, [grouped, pathname]);
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(defaultOpen);
+  const prevPathRef = useRef(pathname);
+
+  // Auto-expand the group when the active route changes
+  useEffect(() => {
+    if (prevPathRef.current === pathname) return;
+    prevPathRef.current = pathname;
+    const update: Record<string, boolean> = {};
+    for (const [group, items] of Object.entries(grouped)) {
+      if (items.some((i) => i.path === pathname)) update[group] = true;
+    }
+    if (Object.keys(update).length > 0) setOpenGroups((prev) => ({ ...prev, ...update }));
+  }, [pathname, grouped]);
+
+  const toggle = (group: string) => setOpenGroups((prev) => ({ ...prev, [group]: !prev[group] }));
+
+  return (
+    <>
+      {Object.entries(grouped).map(([group, items]) => {
+        const isOpen = openGroups[group] ?? false;
+        const hasActive = items.some((i) => i.path === pathname);
+        return (
+          <div key={group} className="space-y-0.5">
+            <button
+              onClick={() => toggle(group)}
+              className={cn(
+                "w-full flex items-center justify-between px-3 pt-3 pb-1 text-[9px] font-mono uppercase tracking-widest transition-colors",
+                hasActive ? "text-primary/70" : "text-muted-foreground/50 hover:text-muted-foreground"
+              )}
+            >
+              {group}
+              <ChevronDown
+                className={cn(
+                  "w-3 h-3 transition-transform duration-200",
+                  isOpen ? "rotate-0" : "-rotate-90"
+                )}
+              />
+            </button>
+            {isOpen && items.map((item) => (
+              <NavItem
+                key={`${item.path}-${item.tour}`}
+                item={item}
+                isActive={pathname === item.path}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
 // ─── Sidebar body ─────────────────────────────────────────────────────────────
 const SidebarBody = ({
   visibleItems,
@@ -91,7 +163,7 @@ const SidebarBody = ({
   const regularItems = visibleItems.filter((i) => !i.isolated);
   const isolatedItems = visibleItems.filter((i) => i.isolated);
 
-  // ── Pro mode: group by item.group ──────────────────────────────────────────
+  // ── Pro mode: collapsible groups by item.group ────────────────────────────
   const renderProItems = () => {
     const grouped = regularItems.reduce<Record<string, NavigationItem[]>>((acc, item) => {
       const g = item.group || "Outros";
@@ -99,21 +171,7 @@ const SidebarBody = ({
       return acc;
     }, {});
 
-    return Object.entries(grouped).map(([group, items]) => (
-      <div key={group} className="space-y-0.5">
-        <p className="px-3 pt-3 pb-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">
-          {group}
-        </p>
-        {items.map((item) => (
-          <NavItem
-            key={`${item.path}-${item.tour}`}
-            item={item}
-            isActive={pathname === item.path}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </div>
-    ));
+    return <CollapsibleProGroups grouped={grouped} pathname={pathname} onNavigate={onNavigate} />;
   };
 
   // ── Simplified mode: sectionLabel dividers ────────────────────────────────
@@ -275,7 +333,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         </aside>
       )}
 
-      <main className="flex-1 overflow-auto min-w-0">
+      <main id="orion-main-scroll" className="flex-1 overflow-auto min-w-0">
         {/* Mobile top bar */}
         {isMobile && (
           <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-card/95 backdrop-blur border-b border-border/60">

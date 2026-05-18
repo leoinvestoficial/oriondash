@@ -111,6 +111,11 @@ const ProTabBar = () => {
   }, []);
 
   useEffect(() => {
+    // Use the AppLayout main scroll container so the listener fires correctly
+    // when the page is laid out with overflow-auto on main, not window.
+    const container =
+      document.getElementById("orion-main-scroll") ?? window as unknown as HTMLElement;
+
     const ids = PRO_TABS.map((t) => t.id);
     const handler = () => {
       for (const id of [...ids].reverse()) {
@@ -119,8 +124,8 @@ const ProTabBar = () => {
       }
       setActive(ids[0]);
     };
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
+    container.addEventListener("scroll", handler, { passive: true });
+    return () => container.removeEventListener("scroll", handler);
   }, []);
 
   return (
@@ -149,8 +154,9 @@ const ProTabBar = () => {
 // ─── Metrics grid (shared between Simplified and Pro first fold) ──────────────
 
 const MetricsGrid = ({ data }: { data: CentralData }) => {
-  const { finance, metrics: _metrics } = data as any;
-  const src = data.dataSource === "mock" ? "mock" : data.dataSource === "real" ? "real" : "estimated";
+  const { finance } = data as any;
+  const isMock = data.dataSource === "mock";
+  const src: "mock" | "real" | "estimated" = isMock ? "mock" : data.dataSource === "real" ? "real" : "estimated";
 
   const roasStatus = finance.actualRoas != null && finance.targetRoas != null
     ? finance.actualRoas >= finance.targetRoas ? "success" : "warning"
@@ -161,6 +167,25 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
 
   return (
     <div className="space-y-3">
+      {/* Mock / no-integration banner */}
+      {isMock && (
+        <div className="flex items-center gap-3 rounded-xl border border-orion-amber/25 bg-orion-amber/5 px-4 py-3">
+          <StatusBadge variant="mock" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-foreground">Dados demonstrativos</p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Conecte suas campanhas para visualizar métricas reais de investimento, ROAS, CPA e conversões.
+            </p>
+          </div>
+          <Link
+            to="/integrations"
+            className="shrink-0 text-[10px] text-primary/80 hover:text-primary transition-colors underline-offset-2 hover:underline font-medium whitespace-nowrap"
+          >
+            Conectar integrações →
+          </Link>
+        </div>
+      )}
+
       {/* Row 1 — Financial KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard
@@ -170,6 +195,7 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           source={src}
           note={finance.attributedRevenue === 0 ? "sem dado" : undefined}
           accent="success"
+          href="/executive-report"
         />
         <MetricCard
           label="Investimento"
@@ -179,6 +205,7 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           note={`pacing ${finance.pacingPercentage.toFixed(0)}%`}
           status={finance.pacingPercentage > 110 ? "warning" : finance.pacingPercentage > 90 ? "neutral" : "success"}
           statusLabel={finance.pacingPercentage > 110 ? "acelerado" : "no ritmo"}
+          href="/campaigns"
         />
         <MetricCard
           label="ROAS"
@@ -191,6 +218,7 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           lowerIsBetter={false}
           empty={finance.actualRoas == null}
           emptyHref="/settings"
+          href="/campaigns"
         />
         <MetricCard
           label="CAC / CPA"
@@ -203,17 +231,19 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           lowerIsBetter
           empty={finance.actualCpa == null}
           emptyHref="/settings"
+          href="/campaigns"
         />
       </div>
 
-      {/* Row 2 — Performance + Operational */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* Row 2 — Performance + Operational (compact) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         <MetricCard
           label="Conversões"
-          value={String(data.finance ? (data as any).metrics?.totalConversions ?? "—" : "—")}
+          value={String((data as any).metrics?.totalConversions ?? "—")}
           icon={CheckCircle2}
           source={src}
           compact
+          href="/campaigns"
         />
         <MetricCard
           label="CTR"
@@ -223,6 +253,7 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           empty={(data as any).metrics?.overallCtr == null}
           emptyHref="/integrations"
           compact
+          href="/campaigns"
         />
         <MetricCard
           label="CPC"
@@ -231,6 +262,7 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           source={src}
           empty={(data as any).metrics?.overallCpc == null}
           compact
+          href="/campaigns"
         />
         <MetricCard
           label="Oportunidades"
@@ -239,6 +271,7 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           source={data.crmOpportunities > 0 ? "real" : "estimated"}
           note="em aberto"
           compact
+          href="/clientes"
         />
         <MetricCard
           label="Aprovações"
@@ -247,6 +280,7 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           status={data.pendingApprovals.length > 0 ? "pending" : "success"}
           statusLabel={data.pendingApprovals.length > 0 ? "pendentes" : "ok"}
           compact
+          href="/approvals"
         />
         <MetricCard
           label="Tarefas"
@@ -255,6 +289,7 @@ const MetricsGrid = ({ data }: { data: CentralData }) => {
           status={data.overdueTasks > 0 ? "urgent" : data.pendingTasks > 0 ? "pending" : "success"}
           statusLabel={data.overdueTasks > 0 ? `${data.overdueTasks} atrasadas` : data.pendingTasks > 0 ? "abertas" : "em dia"}
           compact
+          href="/tasks"
         />
       </div>
     </div>
