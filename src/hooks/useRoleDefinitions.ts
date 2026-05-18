@@ -29,14 +29,70 @@ export interface RoleDefinitionInput {
 }
 
 export const SUGGESTED_MARKETING_ROLES: RoleDefinitionInput[] = [
-  { title: "Head de Marketing", description: "Lidera a estratégia e o time", seniority: "senior" },
-  { title: "Gestor de Tráfego Pago", description: "Operação de Meta, Google e TikTok Ads", seniority: "pleno" },
-  { title: "Designer / Editor de Vídeo", description: "Criação de peças e edição de UGC", seniority: "pleno" },
-  { title: "Copywriter", description: "Texto de anúncios, e-mails e landing pages", seniority: "pleno" },
-  { title: "Social Media", description: "Conteúdo orgânico, calendário e comunidade", seniority: "junior" },
-  { title: "Analista de Dados / BI", description: "Dashboards, atribuição e funil", seniority: "pleno" },
-  { title: "SEO / Conteúdo", description: "Blog, autoridade orgânica e técnica", seniority: "pleno" },
-  { title: "CRM / E-mail", description: "Automação, retenção e LTV", seniority: "pleno" },
+  {
+    title: "Head de Marketing",
+    description: "Lidera a estratégia, prioridades e rotina do time",
+    seniority: "senior",
+    area: "leadership",
+    responsibilities: "Definir prioridades, aprovar campanhas, alinhar marketing ao negócio",
+    tools: "Dashboard, Meta Ads, Google Ads, Analytics, CRM",
+  },
+  {
+    title: "Gestor de Tráfego Pago",
+    description: "Opera mídia paga e otimiza campanhas",
+    seniority: "pleno",
+    area: "performance",
+    responsibilities: "Subir campanhas, otimizar budget, analisar CPA/ROAS, testar públicos",
+    tools: "Meta Ads, Google Ads, TikTok Ads, GA4",
+  },
+  {
+    title: "Designer / Editor de Vídeo",
+    description: "Criação de peças estáticas, motion e UGC",
+    seniority: "pleno",
+    area: "creative",
+    responsibilities: "Produzir peças, adaptar formatos, editar vídeos e criativos de teste",
+    tools: "Canva, Figma, Premiere, CapCut",
+  },
+  {
+    title: "Copywriter",
+    description: "Responsável por hooks, ofertas e conversão por texto",
+    seniority: "pleno",
+    area: "creative",
+    responsibilities: "Criar anúncios, LPs, e-mails, roteiros e mensagens por persona",
+    tools: "Docs, CRM, Research, Orion Studio",
+  },
+  {
+    title: "Social Media",
+    description: "Conteúdo orgânico, calendário e comunidade",
+    seniority: "junior",
+    area: "social",
+    responsibilities: "Planejar calendário, publicar conteúdos, responder comunidade",
+    tools: "Instagram, TikTok, LinkedIn, Orion Calendar",
+  },
+  {
+    title: "Analista de Dados / BI",
+    description: "Leitura de métricas, funil e atribuição",
+    seniority: "pleno",
+    area: "analytics",
+    responsibilities: "Monitorar KPIs, encontrar gargalos, validar hipóteses",
+    tools: "GA4, Looker, Sheets, Orion Dashboard",
+  },
+  {
+    title: "SEO / Conteúdo",
+    description: "Aquisição orgânica e autoridade",
+    seniority: "pleno",
+    area: "content",
+    responsibilities: "Planejar pautas, otimizar SEO, ampliar tráfego orgânico",
+    tools: "Search Console, CMS, Ahrefs, Orion Studio",
+  },
+  {
+    title: "CRM / E-mail",
+    description: "Automação, retenção e monetização de base",
+    seniority: "pleno",
+    area: "crm",
+    responsibilities: "Criar fluxos, segmentar base, recuperar carrinho e aumentar LTV",
+    tools: "Klaviyo, RD Station, HubSpot, Orion Tasks",
+  },
 ];
 
 export const useRoleDefinitions = () => {
@@ -48,11 +104,11 @@ export const useRoleDefinitions = () => {
   const fetchRoles = useCallback(async () => {
     if (!companyDnaId) { setLoading(false); return; }
     const { data, error } = await supabase
-      .from("role_definitions")
+      .from("company_role_definitions" as any)
       .select("*")
       .eq("company_dna_id", companyDnaId)
       .order("created_at", { ascending: true });
-    if (error) console.error(error);
+    if (error) console.error("company role definitions fetch error", error);
     setRoles((data as RoleDefinition[]) || []);
     setLoading(false);
   }, [companyDnaId]);
@@ -61,7 +117,7 @@ export const useRoleDefinitions = () => {
 
   const create = async (input: RoleDefinitionInput) => {
     if (!user || !companyDnaId) return;
-    const { error } = await supabase.from("role_definitions").insert({
+    const { error } = await supabase.from("company_role_definitions" as any).insert({
       company_dna_id: companyDnaId,
       created_by: user.id,
       title: input.title,
@@ -78,13 +134,13 @@ export const useRoleDefinitions = () => {
   };
 
   const update = async (id: string, patch: Partial<RoleDefinitionInput>) => {
-    const { error } = await supabase.from("role_definitions").update(patch).eq("id", id);
+    const { error } = await supabase.from("company_role_definitions" as any).update(patch).eq("id", id);
     if (error) { toast.error("Erro ao atualizar"); return; }
     await fetchRoles();
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("role_definitions").delete().eq("id", id);
+    const { error } = await supabase.from("company_role_definitions" as any).delete().eq("id", id);
     if (error) { toast.error("Erro ao remover"); return; }
     toast.success("Cargo removido");
     await fetchRoles();
@@ -101,7 +157,7 @@ export const useRoleDefinitions = () => {
       headcount: 1,
       area: "marketing",
     }));
-    const { error } = await supabase.from("role_definitions").insert(inserts);
+    const { error } = await supabase.from("company_role_definitions" as any).insert(inserts);
     if (error) { toast.error("Erro ao popular cargos"); return; }
     toast.success("Cargos sugeridos adicionados");
     await fetchRoles();

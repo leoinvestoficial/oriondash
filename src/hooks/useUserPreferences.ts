@@ -6,16 +6,24 @@ interface ChecklistState {
   [key: string]: boolean;
 }
 
+export type DensityMode = "simple" | "detailed" | "pro";
+export type Persona = "owner" | "marketer" | "agency";
+
 interface UserPreferences {
   hidden_banners: string[];
   tour_completed: boolean;
   onboarding_checklist: ChecklistState;
+  // F4 — controle de UX por densidade
+  density_mode: DensityMode;
+  persona: Persona | null;
 }
 
 const DEFAULT: UserPreferences = {
   hidden_banners: [],
   tour_completed: false,
   onboarding_checklist: {},
+  density_mode: "detailed",
+  persona: null,
 };
 
 export const useUserPreferences = () => {
@@ -27,7 +35,7 @@ export const useUserPreferences = () => {
     if (!user) return;
     const { data } = await supabase
       .from("user_preferences")
-      .select("hidden_banners, tour_completed, onboarding_checklist")
+      .select("hidden_banners, tour_completed, onboarding_checklist, density_mode, persona")
       .eq("user_id", user.id)
       .maybeSingle();
     if (data) {
@@ -35,6 +43,8 @@ export const useUserPreferences = () => {
         hidden_banners: data.hidden_banners || [],
         tour_completed: data.tour_completed,
         onboarding_checklist: (data.onboarding_checklist as ChecklistState) || {},
+        density_mode: ((data as { density_mode?: DensityMode }).density_mode) ?? "detailed",
+        persona: ((data as { persona?: Persona | null }).persona) ?? null,
       });
     }
     setLoading(false);
@@ -60,6 +70,8 @@ export const useUserPreferences = () => {
           tour_completed: merged.tour_completed,
           tour_completed_at: merged.tour_completed ? new Date().toISOString() : null,
           onboarding_checklist: merged.onboarding_checklist,
+          density_mode: merged.density_mode,
+          persona: merged.persona,
         },
         { onConflict: "user_id" }
       );
@@ -80,6 +92,19 @@ export const useUserPreferences = () => {
 
   const completeTour = () => persist({ tour_completed: true });
 
+  // F4 — density e persona
+  const setDensity = (density: DensityMode) => persist({ density_mode: density });
+  const setPersona = (persona: Persona) => {
+    // Persona define density default na primeira vez. Se já tem density manual, preserva.
+    const personaDefault: DensityMode =
+      persona === "owner" ? "simple" : persona === "agency" ? "pro" : "detailed";
+    persist({
+      persona,
+      // Só altera density_mode se ainda for o default
+      density_mode: prefs.density_mode === "detailed" && !prefs.persona ? personaDefault : prefs.density_mode,
+    });
+  };
+
   return {
     prefs,
     loading,
@@ -89,5 +114,7 @@ export const useUserPreferences = () => {
     setChecklistItem,
     completeTour,
     refresh,
+    setDensity,
+    setPersona,
   };
 };

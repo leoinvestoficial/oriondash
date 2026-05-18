@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,7 +29,7 @@ export const CreativesUploadStep = ({ onNext, onBack, companyDnaId }: CreativesU
   const [perfLabel, setPerfLabel] = useState<"winner" | "loser" | "current">("current");
   const [copyText, setCopyText] = useState("");
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!user) return;
     const { data, error } = await supabase
       .from("creative_uploads")
@@ -37,9 +37,9 @@ export const CreativesUploadStep = ({ onNext, onBack, companyDnaId }: CreativesU
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (!error && data) setItems(data);
-  };
+  }, [user]);
 
-  useEffect(() => { refresh(); }, [user]);
+  useEffect(() => { refresh(); }, [refresh]);
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

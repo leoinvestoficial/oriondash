@@ -249,6 +249,7 @@ serve(async (req) => {
       account_name: result.accountName || null,
       status: "connected",
       metadata: result.metadata || {},
+      token_expires_at: result.expiresIn ? new Date(Date.now() + result.expiresIn * 1000).toISOString() : null,
       updated_at: new Date().toISOString(),
     };
 

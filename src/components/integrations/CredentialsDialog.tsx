@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,16 +51,10 @@ export const CredentialsDialog = ({ open, onOpenChange, platform, platformName, 
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (open && platform) {
-      loadExisting();
-    }
-  }, [open, platform]);
-
-  const loadExisting = async () => {
+  const loadExisting = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
-      .from("oauth_credentials" as any)
+      .from("oauth_credentials")
       .select("client_id, client_secret, extra_config")
       .eq("user_id", userId)
       .eq("platform", platform)
@@ -68,17 +62,23 @@ export const CredentialsDialog = ({ open, onOpenChange, platform, platformName, 
 
     if (data) {
       const existing: Record<string, string> = {
-        client_id: (data as any).client_id || "",
-        client_secret: (data as any).client_secret || "",
+        client_id: (data as { client_id?: string }).client_id || "",
+        client_secret: (data as { client_secret?: string }).client_secret || "",
       };
-      const extra = (data as any).extra_config as Record<string, string> || {};
+      const extra = (data as { extra_config?: Record<string, string> }).extra_config || {};
       Object.keys(extra).forEach(k => { existing[k] = extra[k]; });
       setValues(existing);
     } else {
       setValues({});
     }
     setLoading(false);
-  };
+  }, [platform, userId]);
+
+  useEffect(() => {
+    if (open && platform) {
+      loadExisting();
+    }
+  }, [loadExisting, open, platform]);
 
   const handleSave = async () => {
     if (!config) return;
@@ -99,7 +99,7 @@ export const CredentialsDialog = ({ open, onOpenChange, platform, platformName, 
       });
 
       const { data: existing } = await supabase
-        .from("oauth_credentials" as any)
+        .from("oauth_credentials")
         .select("id")
         .eq("user_id", userId)
         .eq("platform", platform)
@@ -107,31 +107,31 @@ export const CredentialsDialog = ({ open, onOpenChange, platform, platformName, 
 
       if (existing) {
         await supabase
-          .from("oauth_credentials" as any)
+          .from("oauth_credentials")
           .update({
             client_id: values.client_id.trim(),
             client_secret: values.client_secret.trim(),
             extra_config: extraConfig,
             updated_at: new Date().toISOString(),
-          } as any)
-          .eq("id", (existing as any).id);
+          })
+          .eq("id", (existing as { id: string }).id);
       } else {
         await supabase
-          .from("oauth_credentials" as any)
+          .from("oauth_credentials")
           .insert({
             user_id: userId,
             platform,
             client_id: values.client_id.trim(),
             client_secret: values.client_secret.trim(),
             extra_config: extraConfig,
-          } as any);
+          });
       }
 
       toast.success("Credenciais salvas!");
       onSaved();
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar");
+    } catch (err) {
+      toast.error((err as Error).message || "Erro ao salvar");
     } finally {
       setSaving(false);
     }

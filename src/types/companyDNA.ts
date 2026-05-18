@@ -2,14 +2,54 @@ export interface CompanyDNA {
   identity: {
     companyName: string;
     product: string;
+    businessModel: string;
+    avgTicket: string;
+    competitiveEdge: string;
+    marketPositioning: string;
     toneOfVoice: string;
     values: string;
+    brandPromises: string;
+    lovedExample: string;
     vetoedExample: string;
+  };
+  marketPositioning: {
+    category: string;
+    market_tier: string;
+    direct_competitors: string;
+    indirect_competitors: string;
+    unique_advantage: string;
+    market_trends: string;
   };
   audience: {
     idealCustomer: string;
+    secondarySegments: string;
+    objections: string;
+    triggers: string;
+    channels: string;
     motivations: string;
     language: string;
+  };
+  metrics: {
+    monthly_revenue: string;
+    budget_monthly: string;
+    avg_ticket: string;
+    avg_margin_pct: string;
+    cac_current: string;
+    ltv_estimated: string;
+    monthly_traffic: string;
+    conversion_rate_pct: string;
+    avg_roas: string;
+    perceived_bottlenecks: string;
+    current_tools: string;
+  };
+  goalsConstraints: {
+    primary_goal: string;
+    target_metric: string;
+    channels: string;
+    seasonalities: string;
+    operational_limits: string;
+    forbidden: string;
+    history: string;
   };
 }
 
@@ -18,10 +58,12 @@ export type CustomStepBlock =
   | "identity"
   | "marketPositioning"
   | "audience"
+  | "salesProduct"
   | "metrics"
   | "goalsConstraints"
   | "teamRoles"
-  | "creativesUpload";
+  | "creativesUpload"
+  | "websiteScan";
 
 export interface OnboardingStep {
   id: string;
@@ -52,7 +94,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "identity",
     block: "identity",
     title: "Identidade",
-    subtitle: "Nome, produto, tom de voz e valores.",
+    subtitle: "Marca, oferta, posicionamento e regras da marca.",
     icon: "✦",
     isCustom: true,
     questions: [],
@@ -61,7 +103,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "marketPositioning",
     block: "marketPositioning",
     title: "Mercado & Posicionamento",
-    subtitle: "Categoria, concorrentes, tier e o que te diferencia.",
+    subtitle: "Categoria, concorrentes, tendências e vantagem competitiva.",
     icon: "◎",
     isCustom: true,
     questions: [],
@@ -70,8 +112,17 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "audience",
     block: "audience",
     title: "Público",
-    subtitle: "Cliente ideal, motivações e linguagem.",
+    subtitle: "ICP, segmentos, objeções, gatilhos e linguagem.",
     icon: "◇",
+    isCustom: true,
+    questions: [],
+  },
+  {
+    id: "salesProduct",
+    block: "salesProduct",
+    title: "Produto & Vendas",
+    subtitle: "Oferta, processo de venda, recompra e retenção.",
+    icon: "🛒",
     isCustom: true,
     questions: [],
   },
@@ -88,7 +139,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "goalsConstraints",
     block: "goalsConstraints",
     title: "Objetivos & Restrições",
-    subtitle: "Objetivo principal, canais e o que o Orion nunca deve fazer.",
+    subtitle: "Meta, canais, sazonalidade e limites operacionais.",
     icon: "△",
     isCustom: true,
     questions: [],
@@ -108,6 +159,15 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "Criativos (opcional)",
     subtitle: "Envie anúncios em uso — campeões e fracassados.",
     icon: "🎬",
+    isCustom: true,
+    questions: [],
+  },
+  {
+    id: "websiteScan",
+    block: "websiteScan",
+    title: "Scan do Site",
+    subtitle: "Diagnóstico de branding, conteúdo e conversão do seu site.",
+    icon: "🔍",
     isCustom: true,
     questions: [],
   },

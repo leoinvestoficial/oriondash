@@ -146,6 +146,7 @@ function buildCentralContextSummary(context: Record<string, unknown> | null): st
     "## CONTEXTO ESTRUTURADO DA CENTRAL ORION",
     `- Snapshot: ${context.central_snapshot_timestamp || "nao informado"}`,
     `- Papel do usuario: ${context.user_role || "owner"} / modo: ${context.product_mode || "owner"}`,
+    `- Experiencia atual: ${context.view_mode || "simplified"}`,
     `- Origem dos dados: ${dataQuality?.source || "unknown"}`,
   ];
   if (dataQuality?.notice) lines.push(`- Aviso de dados: ${dataQuality.notice}`);
@@ -209,6 +210,8 @@ function buildCentralContextSummary(context: Record<string, unknown> | null): st
     "Regras para responder com este contexto:",
     "- Nao invente numeros ausentes.",
     "- Se os dados forem mock/demo/estimados, diga isso de forma clara.",
+    "- Se a experiencia atual for simplified, responda curto, sem jargao e com no maximo 3 prioridades.",
+    "- Se a experiencia atual for pro, pode trazer evidencias, riscos, hipoteses, filtros e backlog operacional.",
     "- Para dono, fale em dinheiro e proxima acao. Para gestor, fale em operacao. Para agencia, fale em alinhamento e aprovacao.",
     "- Sempre termine com uma proxima acao concreta.",
   );

@@ -8,9 +8,12 @@ import { IdentityStep } from "@/components/onboarding/IdentityStep";
 import { MarketPositioningStep } from "@/components/onboarding/MarketPositioningStep";
 import { AudienceStep } from "@/components/onboarding/AudienceStep";
 import { MetricsStep } from "@/components/onboarding/MetricsStep";
+import { SalesProductStep } from "@/components/onboarding/SalesProductStep";
 import { GoalsConstraintsStep } from "@/components/onboarding/GoalsConstraintsStep";
 import { CreativesUploadStep } from "@/components/onboarding/CreativesUploadStep";
 import { TeamRolesStep } from "@/components/onboarding/TeamRolesStep";
+import { WebsiteScanStep } from "@/components/onboarding/WebsiteScanStep";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 import { useBusinessMetrics } from "@/hooks/useBusinessMetrics";
 
@@ -101,6 +104,16 @@ const Onboarding = () => {
     );
   }
 
+  if (step?.id === "websiteScan") {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <WebsiteScanStep onComplete={handleNext} />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background">
       {!isWelcome && !isComplete && (
@@ -142,6 +155,14 @@ const Onboarding = () => {
         )}
         {step?.id === "audience" && (
           <AudienceStep
+            data={getStepData(step.block)}
+            onUpdate={(k, v) => updateField(step.block, k, v)}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
+        {step?.id === "salesProduct" && (
+          <SalesProductStep
             data={getStepData(step.block)}
             onUpdate={(k, v) => updateField(step.block, k, v)}
             onNext={handleNext}

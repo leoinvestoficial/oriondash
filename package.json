@@ -1,8 +1,16 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "orion-dashboard",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "Orion é um webapp de marketing IA para diagnóstico, estratégia e criação de campanhas.",
+  "author": "leoinvestoficial",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leoinvestoficial/oriondash.git"
+  },
+  "keywords": ["orion", "marketing", "inteligência artificial", "IA", "webapp", "supabase", "react"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",

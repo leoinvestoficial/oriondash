@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { DataSourceKind } from "@/components/central/DataSourceBadge";
-import { normalizeOrionRole, modeForRole, type OrionMode, type OrionRole } from "@/lib/productRoles";
+import { defaultViewModeForRole, normalizeOrionRole, modeForRole, type OrionMode, type OrionRole, type OrionViewMode } from "@/lib/productRoles";
 
 export interface CentralChatContext {
   source: "central_orion";
@@ -8,6 +8,7 @@ export interface CentralChatContext {
   company_name: string | null;
   user_role: OrionRole;
   product_mode: OrionMode;
+  view_mode: OrionViewMode;
   data_quality: {
     source: DataSourceKind;
     has_mock_or_demo: boolean;
@@ -80,9 +81,11 @@ export async function buildCentralChatContext(input: {
   userId: string;
   companyId?: string | null;
   role?: string | null;
+  viewMode?: OrionViewMode;
 }): Promise<CentralChatContext> {
   const role = normalizeOrionRole(input.role);
   const mode = modeForRole(role);
+  const viewMode = input.viewMode || defaultViewModeForRole(role);
 
   const [dnaRes, decisionsRes, orchestrationsRes, approvalsRes, campaignsRes, financeRes, memoryRes, tasksRes, publicationsRes] = await Promise.all([
     supabase.from("company_dna").select("id, company_name").eq("user_id", input.userId).maybeSingle(),
@@ -179,6 +182,7 @@ export async function buildCentralChatContext(input: {
     company_name: dnaRes.data?.company_name || null,
     user_role: role,
     product_mode: mode,
+    view_mode: viewMode,
     data_quality: dataQuality,
     central_snapshot_timestamp: new Date().toISOString(),
     priority,

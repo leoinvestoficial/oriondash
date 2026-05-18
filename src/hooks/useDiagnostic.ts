@@ -63,8 +63,15 @@ export const useDiagnostic = () => {
   const generate = async () => {
     if (!user) return;
     setGenerating(true);
+    const slowNotice = window.setTimeout(() => {
+      toast.info("O diagnóstico ainda está sendo gerado. Você pode aguardar; se passar muito tempo, tente novamente.");
+    }, 12000);
     try {
-      const { data, error } = await supabase.functions.invoke("diagnose-business", { body: {} });
+      const invoke = supabase.functions.invoke("diagnose-business", { body: {} });
+      const timeout = new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error("Tempo limite ao gerar diagnóstico. Tente novamente em instantes.")), 90000);
+      });
+      const { data, error } = await Promise.race([invoke, timeout]);
       if (error) {
         const msg = (error as any)?.context?.error || error.message || "Falha ao gerar diagnóstico";
         toast.error(msg);
@@ -77,7 +84,10 @@ export const useDiagnostic = () => {
       }
       toast.success("Diagnóstico gerado");
       await fetchLatest();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao gerar diagnóstico");
     } finally {
+      window.clearTimeout(slowNotice);
       setGenerating(false);
     }
   };

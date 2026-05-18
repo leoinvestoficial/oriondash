@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -35,6 +35,7 @@ export interface DashboardMetrics {
   }>;
   byPlatform: Record<string, { spend: number; clicks: number; impressions: number; conversions: number; revenue: number }>;
   hasData: boolean;
+  hasMockData: boolean;
 }
 
 export const useDashboardMetrics = (days: number = 7) => {
@@ -42,7 +43,7 @@ export const useDashboardMetrics = (days: number = 7) => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     if (!user) { setLoading(false); return; }
 
     const sinceDate = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
@@ -56,7 +57,7 @@ export const useDashboardMetrics = (days: number = 7) => {
     const metricRows = metricsRes.data || [];
 
     if (!campaigns.length && !metricRows.length) {
-      setMetrics({ totalSpend: 0, totalRevenue: 0, totalClicks: 0, totalImpressions: 0, totalConversions: 0, overallRoas: null, overallCtr: null, overallCpc: null, overallCpa: null, dailyData: [], campaignsList: [], byPlatform: {}, hasData: false });
+      setMetrics({ totalSpend: 0, totalRevenue: 0, totalClicks: 0, totalImpressions: 0, totalConversions: 0, overallRoas: null, overallCtr: null, overallCpc: null, overallCpa: null, dailyData: [], campaignsList: [], byPlatform: {}, hasData: false, hasMockData: false });
       setLoading(false);
       return;
     }
@@ -114,6 +115,10 @@ export const useDashboardMetrics = (days: number = 7) => {
         cpa: cm.conversions > 0 ? cm.spend / cm.conversions : null,
       };
     });
+    const hasMockData = campaigns.some((c) => {
+      const snapshot = c.metrics_snapshot as { source?: string } | null;
+      return snapshot?.source === "mock_seed";
+    });
 
     const dailyData = Object.entries(dailyMap)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -133,11 +138,12 @@ export const useDashboardMetrics = (days: number = 7) => {
       campaignsList,
       byPlatform: platformMetrics,
       hasData: metricRows.length > 0,
+      hasMockData,
     });
     setLoading(false);
-  };
+  }, [user, days]);
 
-  useEffect(() => { fetchMetrics(); }, [user, days]);
+  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
   return { metrics, loading, refetch: fetchMetrics };
 };

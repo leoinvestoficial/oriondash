@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { OnboardingStep } from "@/types/companyDNA";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
@@ -99,6 +99,7 @@ export const OnboardingSidebar = (props: OnboardingSidebarProps) => {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 bg-card border-border p-6 flex flex-col">
+            <SheetTitle className="sr-only">Etapas do onboarding</SheetTitle>
             <SidebarContent {...props} onNavigate={() => setOpen(false)} />
           </SheetContent>
         </Sheet>

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Clock, ListTodo, Sparkles, User, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, Clock, ListTodo, Sparkles, User, Calendar, ChevronDown, ChevronUp, LucideIcon } from "lucide-react";
 import { useState } from "react";
 
 interface Task {
@@ -22,7 +22,7 @@ const priorityConfig: Record<string, { label: string; className: string }> = {
   low: { label: "Baixa", className: "bg-muted text-muted-foreground" },
 };
 
-const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
+const statusConfig: Record<string, { label: string; icon: LucideIcon; className: string }> = {
   todo: { label: "A fazer", icon: ListTodo, className: "text-muted-foreground" },
   in_progress: { label: "Em andamento", icon: Clock, className: "text-orion-info" },
   done: { label: "Concluído", icon: CheckCircle2, className: "text-orion-success" },

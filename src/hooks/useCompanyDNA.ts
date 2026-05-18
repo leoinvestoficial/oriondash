@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -18,7 +18,7 @@ export const useCompanyDNA = () => {
   const [dna, setDNA] = useState<CompanyDNARecord | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchDNA = async () => {
+  const fetchDNA = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     
     const { data, error } = await supabase
@@ -30,14 +30,14 @@ export const useCompanyDNA = () => {
     if (error) {
       console.error("Error fetching DNA:", error);
     } else {
-      setDNA(data ? { ...data, dna_data: (data.dna_data as any) || {} } : null);
+      setDNA(data ? { ...data, dna_data: (data.dna_data as Record<string, Record<string, string>>) || {} } : null);
     }
     setLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchDNA();
-  }, [user]);
+  }, [fetchDNA]);
 
   const saveDNA = async (
     formData: Record<string, Record<string, string>>,
@@ -51,7 +51,7 @@ export const useCompanyDNA = () => {
       const { error } = await supabase
         .from("company_dna")
         .update({
-          dna_data: formData as any,
+          dna_data: formData,
           company_name: companyName,
           onboarding_completed: completed,
         })
@@ -64,7 +64,7 @@ export const useCompanyDNA = () => {
         .from("company_dna")
         .insert({
           user_id: user.id,
-          dna_data: formData as any,
+          dna_data: formData,
           company_name: companyName,
           onboarding_completed: completed,
         });

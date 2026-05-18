@@ -51,6 +51,50 @@ export const AudienceStep = ({ data, onUpdate, onNext, onBack }: Props) => {
         </div>
 
         <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Segmentos secundários relevantes</label>
+          <Textarea
+            rows={2}
+            value={data.secondarySegments || ""}
+            onChange={(e) => onUpdate("secondarySegments", e.target.value)}
+            placeholder="Ex: gestores de marketing, founders, e-commerces em fase de escala..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Principais objeções de compra</label>
+          <Textarea
+            rows={2}
+            value={data.objections || ""}
+            onChange={(e) => onUpdate("objections", e.target.value)}
+            placeholder="Ex: preço, medo de não funcionar, tempo de implementação, troca de fornecedor..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Gatilhos de decisão</label>
+          <Textarea
+            rows={2}
+            value={data.triggers || ""}
+            onChange={(e) => onUpdate("triggers", e.target.value)}
+            placeholder="Ex: urgência, prova social, ROI, praticidade, segurança..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Canais onde esse público já está</label>
+          <Textarea
+            rows={2}
+            value={data.channels || ""}
+            onChange={(e) => onUpdate("channels", e.target.value)}
+            placeholder="Ex: Instagram, Google Search, YouTube, comunidades, eventos..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
           <label className="block text-sm text-foreground mb-2 font-medium">Linguagem que eles usam</label>
           <Textarea
             rows={2}

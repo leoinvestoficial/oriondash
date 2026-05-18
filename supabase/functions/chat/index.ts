@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -44,12 +44,15 @@ serve(async (req) => {
     let tasksContext = "";
     let eventsContext = "";
     let campaignsContext = "";
-    let _adaptiveStrategy = "";
+    const _adaptiveStrategy = "";
     let competitorBlock = "";
     let businessIntel = "";
+    let crmContext = "";
+    let funnelsContext = "";
+    let goalsContext = "";
 
     if (user) {
-        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes, campaignsRes, briefsRes, memoryRes] = await Promise.all([
+        const [dnaRes, teamRes, tasksRes, eventsRes, approvalsRes, campaignsRes, briefsRes, memoryRes, crmCustRes, crmOppRes, funnelsRes, goalsRes] = await Promise.all([
           supabase.from("company_dna").select("*").eq("user_id", user.id).maybeSingle(),
           supabase.from("team_members").select("*").eq("user_id", user.id).order("created_at"),
           supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
@@ -58,6 +61,10 @@ serve(async (req) => {
           supabase.from("campaigns").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
           supabase.from("creative_briefs").select("title, brief_type, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
           supabase.from("business_memory").select("memory_type, title, summary, tags, importance, occurred_at").eq("user_id", user.id).order("importance", { ascending: false }).order("occurred_at", { ascending: false }).limit(30),
+          supabase.from("crm_customers").select("name, status, total_revenue, purchase_count, last_purchase_date, tags").eq("user_id", user.id).order("total_revenue", { ascending: false }).limit(30),
+          supabase.from("crm_opportunities").select("title, opportunity_type, expected_revenue, status, priority, recommended_message").eq("user_id", user.id).eq("status", "open").limit(20),
+          supabase.from("marketing_funnels").select("id, name, status, description, metadata").eq("user_id", user.id).order("created_at", { ascending: false }).limit(15),
+          supabase.from("strategic_goals").select("title, status, target_metric, target_value, current_value, time_horizon, goal_type").eq("user_id", user.id).eq("status", "active").limit(10),
         ]);
 
         const dna = dnaRes.data;
@@ -108,6 +115,18 @@ Onboarding: ${dna.onboarding_completed ? "✅ Completo" : "⚠️ Incompleto —
 - **Sazonalidade**: ${d.constraints?.seasonality || "—"}
 - **Canais prioritários**: ${d.constraints?.priorityChannels || "—"}
 - **Canais excluídos**: ${d.constraints?.excludedChannels || "—"}
+
+### PRODUTO & VENDAS
+- **Modelo de negócio**: ${d.salesProduct?.business_model || "—"}
+- **Oferta principal**: ${d.salesProduct?.main_offer || "—"}
+- **Upsell / cross-sell**: ${d.salesProduct?.upsells || "—"}
+- **Frequência de compra**: ${d.salesProduct?.purchase_frequency || "—"}
+- **Clientes ativos**: ${d.salesProduct?.active_customers_count || "—"}
+- **Churn mensal (%)**: ${d.salesProduct?.churn_rate || "—"}
+- **NPS**: ${d.salesProduct?.nps || "—"}
+- **Processo de venda**: ${d.salesProduct?.sales_process || "—"}
+- **Retenção / recompra**: ${d.salesProduct?.retention_strategy || "—"}
+- **Diferencial decisivo**: ${d.salesProduct?.main_differentiator || "—"}
 
 ### HISTÓRICO & APRENDIZADOS
 - **O que já foi tentado**: ${d.history?.pastAttempts || "—"}
@@ -293,6 +312,58 @@ Quando o usuário pedir QUALQUER recomendação (conteúdo, campanha, estratégi
           }
         }
 
+        // ===== CRM =====
+        if (crmCustRes.data?.length) {
+          const custs = crmCustRes.data as { name: string; status: string; total_revenue: number; purchase_count: number; last_purchase_date: string | null; tags: string[] }[];
+          const vips = custs.filter(c => c.status === "vip").length;
+          const atRisk = custs.filter(c => c.status === "at_risk").length;
+          const totalRev = custs.reduce((s, c) => s + (c.total_revenue || 0), 0);
+          crmContext = `\n## 👥 CRM — BASE DE CLIENTES (${custs.length} total)\n`;
+          crmContext += `💰 Receita total: R$ ${totalRev.toLocaleString("pt-BR")} | ⭐ VIPs: ${vips} | ⚠️ Em risco: ${atRisk}\n`;
+          crmContext += `\n### Top clientes:\n`;
+          for (const c of custs.slice(0, 10)) {
+            crmContext += `- **${c.name}** [${c.status}] R$ ${(c.total_revenue || 0).toLocaleString("pt-BR")} | ${c.purchase_count || 0} compras`;
+            if (c.last_purchase_date) crmContext += ` | última: ${new Date(c.last_purchase_date).toLocaleDateString("pt-BR")}`;
+            if (c.tags?.length) crmContext += ` | tags: ${c.tags.join(", ")}`;
+            crmContext += `\n`;
+          }
+        }
+
+        if (crmOppRes.data?.length) {
+          const opps = crmOppRes.data as { title: string; opportunity_type: string; expected_revenue: number | null; priority: string; recommended_message: string | null }[];
+          crmContext += `\n### Oportunidades abertas (${opps.length}):\n`;
+          for (const o of opps) {
+            crmContext += `- **${o.title}** [${o.opportunity_type}/${o.priority}]${o.expected_revenue ? ` R$ ${o.expected_revenue.toLocaleString("pt-BR")}` : ""}\n`;
+            if (o.recommended_message) crmContext += `  Mensagem sugerida: "${o.recommended_message}"\n`;
+          }
+          crmContext += `\nUse esses dados para sugerir ações de pós-venda, recompra e winback específicas para esses clientes.\n`;
+        }
+
+        // ===== FUNNELS =====
+        if (funnelsRes.data?.length) {
+          const funnels = funnelsRes.data as { id: string; name: string; status: string; description: string | null; metadata: Record<string, string> | null }[];
+          funnelsContext = `\n## 🔀 FUNIS DE MARKETING (${funnels.length})\n`;
+          for (const f of funnels) {
+            const fType = f.metadata?.funnel_type || "marketing";
+            funnelsContext += `- **${f.name}** [${fType}/${f.status}]${f.description ? ` — ${f.description}` : ""}\n`;
+          }
+          funnelsContext += `\nAo criar um novo funil via ação (create_funnel), ele aparecerá na página /funnels com todos os passos.\n`;
+        }
+
+        // ===== STRATEGY GOALS =====
+        if (goalsRes.data?.length) {
+          const goals = goalsRes.data as { title: string; status: string; goal_type: string; target_metric: string | null; target_value: number | null; current_value: number | null; time_horizon: string }[];
+          goalsContext = `\n## 🎯 METAS ESTRATÉGICAS ATIVAS (${goals.length})\n`;
+          for (const g of goals) {
+            goalsContext += `- **${g.title}** [${g.goal_type}/${g.time_horizon}]`;
+            if (g.target_metric) goalsContext += ` | Métrica: ${g.target_metric}`;
+            if (g.target_value) goalsContext += ` → alvo: ${g.target_value}`;
+            if (g.current_value) goalsContext += ` (atual: ${g.current_value})`;
+            goalsContext += `\n`;
+          }
+          goalsContext += `\nReferencie essas metas em suas recomendações. Tudo que você sugerir deve conectar a uma das metas acima.\n`;
+        }
+
         // ===== CÉREBRO CONTÍNUO (SSOT) =====
         if (memoryRes.data?.length) {
           eventsContext += `\n## 🧠 CÉREBRO CONTÍNUO — memórias de alta importância (${memoryRes.data.length})\n`;
@@ -306,7 +377,14 @@ Quando o usuário pedir QUALQUER recomendação (conteúdo, campanha, estratégi
 
     const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
-    const systemPrompt = `Você é o **Orion** — um CMO (Chief Marketing Officer) virtual com 15+ anos de experiência em marketing digital, growth, branding e performance. Você NÃO é um assistente genérico. Você é um executivo sênior de marketing que OPERA, DECIDE e EXECUTA.
+    const systemPrompt = `Você é o **Orion** — o CMO (Chief Marketing Officer) virtual especializado NESTA empresa específica. Você tem acesso completo e irrestrito a todos os dados do negócio: clientes, campanhas, funis, metas, equipe, histórico. Você NÃO é um assistente genérico. Você é o parceiro estratégico que OPERA, DECIDE e EXECUTA.
+
+## ⚡ CAPACIDADES EXECUTÁVEIS — VOCÊ PODE AGIR DIRETAMENTE
+
+Você pode criar e modificar QUALQUER coisa no sistema. Quando o usuário pedir, execute imediatamente sem pedir confirmação extra para ações simples. Para ações com impacto financeiro >10% do budget, crie um approval primeiro.
+
+**Áreas de execução direta**: Tarefas, Campanhas, Funis completos (com passos), Metas estratégicas, Oportunidades de CRM, Conteúdo no calendário, Briefs de criação, Aprovações, Eventos de negócio.
+
 
 ## 🧠 SEU MODELO MENTAL
 
@@ -323,6 +401,9 @@ Você pensa como um CMO que já liderou times em startups, scale-ups e empresas 
 ${companyContext}
 ${businessIntel}
 ${competitorBlock}
+${goalsContext}
+${crmContext}
+${funnelsContext}
 ${teamContext}
 ${tasksContext}
 ${campaignsContext}
@@ -424,7 +505,7 @@ Você pode EXECUTAR ações reais. Quando o usuário pedir para criar/adicionar/
 :::
 \`\`\`
 
-### Tipos:
+### Tipos disponíveis:
 
 **create_task**: \`{ title, description, assignee_name?, due_date (YYYY-MM-DD), priority (high|medium|low), category (campanha|conteúdo|criativo|análise|estratégia) }\`
 
@@ -436,12 +517,25 @@ Você pode EXECUTAR ações reais. Quando o usuário pedir para criar/adicionar/
 
 **update_task**: \`{ title (busca parcial), status? (todo|in_progress|done), priority? (high|medium|low) }\`
 
+**create_campaign**: \`{ name, platform (meta|google|tiktok|instagram|email|whatsapp), objective (awareness|traffic|conversion|retention), budget_daily?, budget_total?, start_date?, end_date?, description, status (draft|active) }\`
+
+**create_funnel**: \`{ name, description?, funnel_type (marketing|sales|onboarding|retention), steps: [{ title, type (ad|landing_page|email|upsell|payment), description? }] }\`
+→ Cria o funil completo com todos os passos de uma vez. Ideal quando o usuário pede um funil.
+
+**create_goal**: \`{ title, description?, target_metric (ex: "ROAS", "Leads", "Faturamento"), target_value (ex: "3x", "500", "R$ 100k"), current_value?, deadline (YYYY-MM-DD), priority (high|medium|low), category (growth|retention|brand|efficiency) }\`
+
+**create_crm_opportunity**: \`{ title, opportunity_type (repurchase|winback|upsell|cross_sell|abandoned_cart), expected_revenue?, recommended_message, priority (high|medium|low) }\`
+
+**create_calendar_event**: \`{ title, description?, content_type (post|reel|story|email|ad), platform (instagram|facebook|tiktok|linkedin|email|whatsapp), scheduled_date (YYYY-MM-DD), copy?, hashtags? }\`
+
 ### Regras de ação:
 - SEMPRE crie ações quando pedirem para criar/adicionar/salvar algo
-- Múltiplas ações são permitidas na mesma resposta
-- Explique em texto ALÉM do bloco de ação
+- Múltiplas ações são permitidas na mesma resposta — use todas necessárias
+- Explique em texto ALÉM do bloco de ação (o que está fazendo e por quê)
 - Planejamentos → cada tarefa é uma ação separada com data e responsável
-- Propostas que afetam budget > 10% ou novos canais → create_approval
+- Funis → crie com TODOS os steps em uma única ação create_funnel
+- Calendário de conteúdo → crie cada post/reel como create_calendar_event separado
+- Propostas que afetam budget > 10% ou novos canais → create_approval primeiro
 
 ## 🗣️ COMUNICAÇÃO
 - Sempre em **português brasileiro**
@@ -459,7 +553,7 @@ Você pode EXECUTAR ações reais. Quando o usuário pedir para criar/adicionar/
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-1.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
             ...messages,

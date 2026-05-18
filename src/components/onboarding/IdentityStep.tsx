@@ -48,6 +48,15 @@ export const IdentityStep = ({ data, onUpdate, onNext, onBack }: Props) => {
               className="bg-orion-surface-2 border-border focus:border-primary"
             />
           </div>
+          <div>
+            <label className="block text-sm text-foreground mb-2 font-medium">Modelo de negócio</label>
+            <Input
+              value={data.businessModel || ""}
+              onChange={(e) => onUpdate("businessModel", e.target.value)}
+              placeholder="Ex: SaaS B2B, e-commerce, infoproduto, serviço recorrente"
+              className="bg-orion-surface-2 border-border focus:border-primary"
+            />
+          </div>
         </div>
 
         <div>
@@ -61,6 +70,27 @@ export const IdentityStep = ({ data, onUpdate, onNext, onBack }: Props) => {
           />
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-foreground mb-2 font-medium">Ticket médio</label>
+            <Input
+              value={data.avgTicket || ""}
+              onChange={(e) => onUpdate("avgTicket", e.target.value)}
+              placeholder="Ex: R$ 197 ou R$ 4.000/ano"
+              className="bg-orion-surface-2 border-border focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-foreground mb-2 font-medium">Posicionamento desejado</label>
+            <Input
+              value={data.marketPositioning || ""}
+              onChange={(e) => onUpdate("marketPositioning", e.target.value)}
+              placeholder="Ex: premium, acessível, especialista, disruptor"
+              className="bg-orion-surface-2 border-border focus:border-primary"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm text-foreground mb-2 font-medium">Valores inegociáveis</label>
           <Textarea
@@ -68,6 +98,38 @@ export const IdentityStep = ({ data, onUpdate, onNext, onBack }: Props) => {
             value={data.values || ""}
             onChange={(e) => onUpdate("values", e.target.value)}
             placeholder="Ex: Transparência radical, sem clickbait, dados antes de opinião..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Promessas que a marca faz</label>
+          <Textarea
+            rows={2}
+            value={data.brandPromises || ""}
+            onChange={(e) => onUpdate("brandPromises", e.target.value)}
+            placeholder="Ex: clareza, agilidade, segurança, performance sem complicação..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Diferencial competitivo em 1 frase</label>
+          <Input
+            value={data.competitiveEdge || ""}
+            onChange={(e) => onUpdate("competitiveEdge", e.target.value)}
+            placeholder="Ex: único player com operação full-service + dados proprietários"
+            className="bg-orion-surface-2 border-border focus:border-primary"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Exemplo de conteúdo/estética que representa bem a marca</label>
+          <Textarea
+            rows={2}
+            value={data.lovedExample || ""}
+            onChange={(e) => onUpdate("lovedExample", e.target.value)}
+            placeholder="Descreva uma peça, campanha ou marca que traduz bem o padrão que vocês gostam."
             className="bg-orion-surface-2 border-border focus:border-primary resize-none"
           />
         </div>

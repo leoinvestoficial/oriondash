@@ -84,12 +84,34 @@ export const MarketPositioningStep = ({ data, onUpdate, onNext, onBack }: Props)
         </div>
 
         <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Alternativas indiretas que disputam a atenção</label>
+          <Textarea
+            rows={2}
+            value={data.indirect_competitors || ""}
+            onChange={(e) => onUpdate("indirect_competitors", e.target.value)}
+            placeholder="Ex: planilhas, agência tradicional, solução interna, freelancer..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
           <label className="block text-sm text-foreground mb-2 font-medium">O que mais te diferencia (1 frase)</label>
           <Input
             value={data.unique_advantage || ""}
             onChange={(e) => onUpdate("unique_advantage", e.target.value)}
             placeholder="Ex: Único do Brasil com integração nativa com X..."
             className="bg-orion-surface-2 border-border focus:border-primary"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Tendências ou mudanças do mercado que importam agora</label>
+          <Textarea
+            rows={2}
+            value={data.market_trends || ""}
+            onChange={(e) => onUpdate("market_trends", e.target.value)}
+            placeholder="Ex: queda de alcance orgânico, aumento de CPC, pressão por ROI, IA virando padrão..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
           />
         </div>
       </div>

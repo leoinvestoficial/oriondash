@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type AppRole = "owner" | "admin" | "employee";
+export type AppRole =
+  | "owner"
+  | "admin"
+  | "employee"
+  | "manager"
+  | "team"
+  | "agency_admin"
+  | "agency_operator"
+  | "client_viewer";
 
 export const useUserRole = () => {
   const { user } = useAuth();
@@ -30,7 +38,10 @@ export const useUserRole = () => {
         setRole(data.role as AppRole);
         setCompanyDnaId(data.company_dna_id);
       } else {
-        setRole(null);
+        // No role entry yet — user is the account creator who hasn't finished
+        // onboarding. Invited employees always have a user_roles row.
+        // Default to "owner" so they see the full interface.
+        setRole("owner");
         setCompanyDnaId(null);
       }
       setLoading(false);
@@ -42,7 +53,7 @@ export const useUserRole = () => {
     companyDnaId,
     loading,
     isOwner: role === "owner",
-    isAdmin: role === "admin",
-    isEmployee: role === "employee",
+    isAdmin: role === "admin" || role === "manager" || role === "agency_admin",
+    isEmployee: role === "employee" || role === "team" || role === "agency_operator" || role === "client_viewer",
   };
 };

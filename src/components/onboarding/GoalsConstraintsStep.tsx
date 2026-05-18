@@ -86,6 +86,28 @@ export const GoalsConstraintsStep = ({ data, onUpdate, onNext, onBack }: Props) 
         </div>
 
         <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Sazonalidade e janelas importantes</label>
+          <Textarea
+            rows={2}
+            value={data.seasonalities || ""}
+            onChange={(e) => onUpdate("seasonalities", e.target.value)}
+            placeholder="Ex: Black Friday, volta às aulas, fechamento mensal, lançamento em junho..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Limitações operacionais/comerciais</label>
+          <Textarea
+            rows={2}
+            value={data.operational_limits || ""}
+            onChange={(e) => onUpdate("operational_limits", e.target.value)}
+            placeholder="Ex: equipe pequena, estoque limitado, capacidade comercial de 40 leads/dia..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
           <label className="block text-sm text-foreground mb-2 font-medium">
             Restrições / temas proibidos
           </label>

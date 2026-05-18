@@ -7,6 +7,7 @@ export type OrionRole =
   | "client_viewer";
 
 export type OrionMode = "owner" | "manager" | "agency";
+export type OrionViewMode = "simplified" | "pro";
 
 export const normalizeOrionRole = (role?: string | null): OrionRole => {
   switch (role) {
@@ -40,3 +41,10 @@ export const modeForRole = (role: OrionRole): OrionMode => {
 
 export const canApproveForRole = (role: OrionRole) =>
   role === "owner" || role === "manager" || role === "agency_admin" || role === "client_viewer";
+
+export const canUseProView = (role: OrionRole) => role !== "client_viewer";
+
+export const defaultViewModeForRole = (role: OrionRole): OrionViewMode => {
+  if (role === "owner" || role === "client_viewer") return "simplified";
+  return "pro";
+};

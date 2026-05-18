@@ -104,7 +104,7 @@ CREATE TABLE public.company_invites (
   email text NOT NULL,
   full_name text,
   role app_role NOT NULL DEFAULT 'employee',
-  token text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(24), 'hex'),
+  token text NOT NULL UNIQUE DEFAULT md5(random()::text || clock_timestamp()::text || gen_random_uuid()::text),
   status text NOT NULL DEFAULT 'pending', -- pending | accepted | revoked
   accepted_by uuid,
   accepted_at timestamptz,

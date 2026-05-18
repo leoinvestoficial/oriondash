@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { embed, vectorToPgString } from "../_shared/embeddings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,6 +88,18 @@ Deno.serve(async (req) => {
 
     const { data: dna } = await supabase.from("company_dna").select("id").eq("user_id", userData.user.id).maybeSingle();
 
+    // F1: gerar embedding (title + summary) pra retrieval semântico em chat-v2.
+    // Falha aqui não derruba a request — a memória ainda é gravada sem embedding.
+    // Backfill posterior pode preencher.
+    let embeddingPg: string | null = null;
+    try {
+      const embedText = `${title}\n${enriched.summary || ""}\n${content || ""}`.slice(0, 8000);
+      const e = await embed(embedText);
+      embeddingPg = vectorToPgString(e.vector);
+    } catch (embedErr) {
+      console.error("embed failed, gravando sem embedding:", embedErr instanceof Error ? embedErr.message : embedErr);
+    }
+
     const { data: inserted, error } = await supabase.from("business_memory").insert({
       user_id: userData.user.id,
       company_dna_id: dna?.id ?? null,
@@ -97,6 +110,7 @@ Deno.serve(async (req) => {
       importance: providedImportance ?? enriched.importance,
       reference_table, reference_id, raw_data,
       occurred_at: occurred_at ?? new Date().toISOString(),
+      embedding: embeddingPg,
     }).select().single();
 
     if (error) throw error;

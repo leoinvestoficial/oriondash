@@ -36,15 +36,14 @@ export const OnboardingComplete = ({ data }: OnboardingCompleteProps) => {
       <div className="grid grid-cols-2 gap-3 mb-10 max-w-md mx-auto text-left">
         {[
           { icon: "🎨", label: "Marca & Visual", block: "brandAssets" },
-          { icon: "📈", label: "Estratégia", block: "businessContext" },
-          { icon: "💰", label: "Economics", block: "economics" },
-          { icon: "📊", label: "Funil", block: "funnelSnapshot" },
-          { icon: "🎯", label: "Posicionamento", block: "positioning" },
+          { icon: "🎯", label: "Posicionamento", block: "marketPositioning" },
           { icon: "✦", label: "Identidade", block: "identity" },
-          { icon: "◎", label: "Mercado", block: "market" },
+          { icon: "◎", label: "Mercado", block: "marketPositioning" },
           { icon: "◇", label: "Público", block: "audience" },
-          { icon: "△", label: "Objetivos", block: "objectives" },
-          { icon: "⬡", label: "Restrições", block: "constraints" },
+          { icon: "📊", label: "Números & Funil", block: "metrics" },
+          { icon: "△", label: "Objetivos & Restrições", block: "goalsConstraints" },
+          { icon: "👥", label: "Equipe & Cargos", block: "teamRoles" },
+          { icon: "🎬", label: "Criativos", block: "creativesUpload" },
         ].map((item) => {
           const blockData = data[item.block] || {};
           const filled = Object.values(blockData).filter((v) => v?.trim()).length;

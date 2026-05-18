@@ -12,6 +12,142 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+async function recordEndedCampaignOutcomes(userId: string) {
+  const today = new Date().toISOString().split("T")[0];
+  const { data: endedCampaigns, error } = await supabase
+    .from("campaigns")
+    .select("id, status, end_date")
+    .eq("user_id", userId)
+    .or(`status.in.(ended,completed,archived),end_date.lte.${today}`);
+
+  if (error) throw error;
+  if (!endedCampaigns?.length) return { checked: 0, recorded: 0 };
+
+  const fnUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/funnel-outcome-recorder`;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  let recorded = 0;
+
+  for (const campaign of endedCampaigns) {
+    const response = await fetch(fnUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        trigger: "sync-metrics",
+        campaign_id: campaign.id,
+        user_id: userId,
+      }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      console.warn("funnel-outcome-recorder failed", campaign.id, text);
+      continue;
+    }
+    const payload = await response.json().catch(() => ({}));
+    recorded += Number(payload.updated || 0);
+  }
+
+  return { checked: endedCampaigns.length, recorded };
+}
+
+function periodStart(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString().split("T")[0];
+}
+
+function sumMetric(rows: any[], key: string) {
+  return rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
+}
+
+async function recordFunnelMetricSnapshots(userId: string) {
+  const period_start = periodStart(7);
+  const period_end = new Date().toISOString().split("T")[0];
+
+  const { data: campaigns, error: campaignsError } = await supabase
+    .from("campaigns")
+    .select("id, funnel_id, funnel_node_id")
+    .eq("user_id", userId)
+    .not("funnel_id", "is", null)
+    .not("funnel_node_id", "is", null);
+
+  if (campaignsError) throw campaignsError;
+  if (!campaigns?.length) return { snapshots: 0 };
+
+  const campaignIds = campaigns.map((campaign) => campaign.id);
+  const { data: metrics, error: metricsError } = await supabase
+    .from("campaign_metrics")
+    .select("*")
+    .eq("user_id", userId)
+    .in("campaign_id", campaignIds)
+    .gte("date", period_start)
+    .lte("date", period_end);
+
+  if (metricsError) throw metricsError;
+
+  const campaignsByNode = new Map<string, any[]>();
+  for (const campaign of campaigns) {
+    const key = `${campaign.funnel_id}|${campaign.funnel_node_id}`;
+    if (!campaignsByNode.has(key)) campaignsByNode.set(key, []);
+    campaignsByNode.get(key)!.push(campaign);
+  }
+
+  const metricsByCampaign = new Map<string, any[]>();
+  for (const metric of metrics ?? []) {
+    if (!metricsByCampaign.has(metric.campaign_id)) metricsByCampaign.set(metric.campaign_id, []);
+    metricsByCampaign.get(metric.campaign_id)!.push(metric);
+  }
+
+  let snapshots = 0;
+  for (const [key, nodeCampaigns] of campaignsByNode) {
+    const [funnel_id, node_id] = key.split("|");
+    const rows = nodeCampaigns.flatMap((campaign) => metricsByCampaign.get(campaign.id) ?? []);
+    const spend = sumMetric(rows, "spend");
+    const revenue = sumMetric(rows, "revenue");
+    const clicks = sumMetric(rows, "clicks");
+    const impressions = sumMetric(rows, "impressions");
+    const conversions = sumMetric(rows, "conversions");
+    const exitTicketAvg = conversions > 0 ? revenue / conversions : null;
+
+    const snapshot = {
+      user_id: userId,
+      funnel_id,
+      node_id,
+      period_start,
+      period_end,
+      people_count: Math.round(conversions),
+      exit_ticket_avg: exitTicketAvg,
+      revenue,
+      spend,
+      conversions,
+      alerts: [],
+      metrics: {
+        clicks,
+        impressions,
+        ctr: impressions > 0 ? (clicks / impressions) * 100 : null,
+        cpc: clicks > 0 ? spend / clicks : null,
+        cpa: conversions > 0 ? spend / conversions : null,
+        roas: spend > 0 ? revenue / spend : null,
+      },
+    };
+
+    const { error } = await supabase
+      .from("funnel_metric_snapshots")
+      .upsert(snapshot, { onConflict: "funnel_id,node_id,period_start,period_end" });
+    if (error) throw error;
+    snapshots++;
+  }
+
+  return { snapshots };
+}
+
+function stripGeneratedMetricColumns<T extends Record<string, unknown>>(row: T) {
+  const { ctr: _ctr, cpc: _cpc, cpa: _cpa, roas: _roas, ...persistable } = row;
+  return persistable;
+}
+
 // ===== META ADS SYNC =====
 async function syncMetaAds(integration: any) {
   const { access_token, account_id, user_id, id: integrationId } = integration;
@@ -99,9 +235,9 @@ async function syncMetaAds(integration: any) {
         .maybeSingle();
 
       if (existingMetric) {
-        await supabase.from("campaign_metrics").update(metrics).eq("id", existingMetric.id);
+        await supabase.from("campaign_metrics").update(stripGeneratedMetricColumns(metrics)).eq("id", existingMetric.id);
       } else {
-        await supabase.from("campaign_metrics").insert(metrics);
+        await supabase.from("campaign_metrics").insert(stripGeneratedMetricColumns(metrics));
       }
       synced++;
     }
@@ -146,11 +282,28 @@ async function syncGoogleAds(integration: any) {
   const { access_token, refresh_token, account_id, user_id, id: integrationId } = integration;
   if (!access_token) return { synced: 0 };
 
+  const { data: credentials, error: credentialsError } = await supabase
+    .from("oauth_credentials")
+    .select("client_id, client_secret, extra_config")
+    .eq("user_id", user_id)
+    .eq("platform", "google_ads")
+    .maybeSingle();
+
+  if (credentialsError) {
+    throw new Error(`Erro ao carregar credenciais Google Ads: ${credentialsError.message}`);
+  }
+
+  const clientId = credentials?.client_id;
+  const clientSecret = credentials?.client_secret;
+  const developerToken = credentials?.extra_config?.developer_token;
+
+  if (!clientId || !clientSecret) {
+    return { synced: 0, note: "Client ID ou Client Secret ausente nas credenciais do usuário" };
+  }
+
   // Refresh token if needed
   let currentToken = access_token;
   if (refresh_token) {
-    const clientId = Deno.env.get("GOOGLE_ADS_CLIENT_ID")!;
-    const clientSecret = Deno.env.get("GOOGLE_ADS_CLIENT_SECRET")!;
     const refreshRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -168,7 +321,6 @@ async function syncGoogleAds(integration: any) {
     }
   }
 
-  const developerToken = Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN");
   if (!developerToken || !account_id) return { synced: 0, note: "Developer token ou account_id ausente" };
 
   const today = new Date().toISOString().split("T")[0];
@@ -249,9 +401,9 @@ async function syncGoogleAds(integration: any) {
         .eq("campaign_id", campaignId).eq("date", date).maybeSingle();
 
       if (existingMetric) {
-        await supabase.from("campaign_metrics").update(metrics).eq("id", existingMetric.id);
+        await supabase.from("campaign_metrics").update(stripGeneratedMetricColumns(metrics)).eq("id", existingMetric.id);
       } else {
-        await supabase.from("campaign_metrics").insert(metrics);
+        await supabase.from("campaign_metrics").insert(stripGeneratedMetricColumns(metrics));
       }
       synced++;
     }
@@ -346,9 +498,9 @@ async function syncTikTokAds(integration: any) {
         .eq("campaign_id", campaignId).eq("date", date).maybeSingle();
 
       if (existing) {
-        await supabase.from("campaign_metrics").update(metricRow).eq("id", existing.id);
+        await supabase.from("campaign_metrics").update(stripGeneratedMetricColumns(metricRow)).eq("id", existing.id);
       } else {
-        await supabase.from("campaign_metrics").insert(metricRow);
+        await supabase.from("campaign_metrics").insert(stripGeneratedMetricColumns(metricRow));
       }
       synced++;
     }
@@ -380,9 +532,11 @@ serve(async (req) => {
     }
 
     const results: Record<string, any> = {};
+    const usersTouched = new Set<string>();
 
     for (const integration of integrations) {
       try {
+        usersTouched.add(integration.user_id);
         if (integration.platform === "meta_ads") {
           results[`meta_${integration.id}`] = await syncMetaAds(integration);
         } else if (integration.platform === "google_ads") {
@@ -390,15 +544,29 @@ serve(async (req) => {
         } else if (integration.platform === "tiktok_ads") {
           results[`tiktok_${integration.id}`] = await syncTikTokAds(integration);
         }
+
+        await supabase
+          .from("ad_integrations")
+          .update({ last_sync_at: new Date().toISOString(), last_sync_error: null })
+          .eq("id", integration.id);
       } catch (err) {
         console.error(`Sync error for ${integration.platform}:`, err);
         results[`${integration.platform}_${integration.id}`] = { error: err.message };
+        await supabase
+          .from("ad_integrations")
+          .update({ last_sync_at: new Date().toISOString(), last_sync_error: err.message?.slice(0, 500) ?? "sync error" })
+          .eq("id", integration.id);
 
         // If token expired, mark as needs_reauth
         if (err.message?.includes("expired") || err.message?.includes("OAuthException")) {
           await supabase.from("ad_integrations").update({ status: "expired" }).eq("id", integration.id);
         }
       }
+    }
+
+    for (const userId of usersTouched) {
+      results[`funnel_snapshots_${userId}`] = await recordFunnelMetricSnapshots(userId);
+      results[`outcomes_${userId}`] = await recordEndedCampaignOutcomes(userId);
     }
 
     return new Response(JSON.stringify({ results }), {

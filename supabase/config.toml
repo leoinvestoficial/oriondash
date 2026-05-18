@@ -1,1 +1,36 @@
-project_id = "lilecqcuvenfoaljmrka"
+project_id = "byaoftiefwolmcikdjoh"
+
+[api]
+enabled = true
+schemas = ["api", "public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+port = 54321
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = []
+jwt_expiry = 3600
+jwt_issuer = "http://127.0.0.1:54321/auth/v1"
+enable_refresh_token_rotation = true
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+secure_password_change = false
+max_frequency = "1m0s"
+otp_length = 8
+otp_expiry = 3600

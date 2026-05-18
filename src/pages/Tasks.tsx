@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +11,8 @@ import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { PageHelpBanner } from "@/components/help/PageHelpBanner";
 import { PAGE_HELP } from "@/lib/pageHelp";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Task {
   id: string;
@@ -44,7 +46,7 @@ const Tasks = () => {
     title: "", description: "", assignee_id: "", due_date: "", priority: "medium", category: "",
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user || !dna) return;
     const [tasksRes, membersRes] = await Promise.all([
       supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
@@ -53,9 +55,9 @@ const Tasks = () => {
     if (tasksRes.data) setTasks(tasksRes.data);
     if (membersRes.data) setMembers(membersRes.data);
     setLoading(false);
-  };
+  }, [user, dna]);
 
-  useEffect(() => { if (dna) fetchData(); }, [dna]);
+  useEffect(() => { if (dna) fetchData(); }, [dna, fetchData]);
 
   const handleCreate = async () => {
     if (!user || !dna || !form.title.trim()) { toast.error("Título é obrigatório"); return; }
@@ -90,7 +92,7 @@ const Tasks = () => {
   const overdue = tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== "done").length;
 
   if (loading) {
-    return <AppLayout><div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 rounded-lg orion-gradient animate-pulse-glow" /></div></AppLayout>;
+    return <AppLayout><PageSkeleton variant="list" /></AppLayout>;
   }
 
   return (
@@ -168,15 +170,13 @@ const Tasks = () => {
 
         {/* Tasks List */}
         {filtered.length === 0 ? (
-          <div className="bg-card border border-border rounded-xl p-12 text-center">
-            <ListTodo className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-heading text-foreground mb-2">Nenhuma tarefa ainda</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-              Crie tarefas manualmente ou peça ao Orion no chat para gerar um planejamento completo.
-            </p>
-            <Button variant="outline" onClick={() => setShowForm(true)} className="border-border gap-2">
-              <Plus className="w-4 h-4" /> Criar primeira tarefa
-            </Button>
+          <div className="bg-card border border-border rounded-xl">
+            <EmptyState
+              icon={ListTodo}
+              title={filter === "all" ? "Nenhuma tarefa ainda" : "Nenhuma tarefa neste filtro"}
+              description="Crie tarefas manualmente ou peça ao Orion no chat para gerar um planejamento completo."
+              action={{ label: "Criar primeira tarefa", onClick: () => setShowForm(true), variant: "outline" }}
+            />
           </div>
         ) : (
           <div className="space-y-2">

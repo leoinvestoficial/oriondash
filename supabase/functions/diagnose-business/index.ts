@@ -30,10 +30,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -85,25 +85,25 @@ ${creatives && creatives.length > 0 ? JSON.stringify(creatives, null, 2) : "Nenh
 
 Agora gere o diagnóstico completo via tool call \`generate_diagnostic\`.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 8192,
+        system: SYSTEM_PROMPT,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
         tools: [
           {
-            type: "function",
-            function: {
               name: "generate_diagnostic",
-              description: "Devolve o diagnóstico estruturado de marketing.",
-              parameters: {
+            description: "Devolve o diagnóstico estruturado de marketing.",
+            input_schema: {
                 type: "object",
                 properties: {
                   score: { type: "integer", minimum: 0, maximum: 100, description: "Score geral 0-100" },
@@ -212,46 +212,36 @@ Agora gere o diagnóstico completo via tool call \`generate_diagnostic\`.`;
                 },
                 required: ["score", "executive_summary", "area_scores", "bottlenecks", "recommendations"],
                 additionalProperties: false,
-              },
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "generate_diagnostic" } },
+        tool_choice: { type: "tool", name: "generate_diagnostic" },
       }),
     });
 
     if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione fundos em Settings > Workspace > Usage." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const txt = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, txt);
+      console.error("Anthropic error:", aiResponse.status, txt);
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit da Anthropic. Tente novamente em alguns segundos." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       return new Response(JSON.stringify({ error: "Falha ao gerar diagnóstico." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
-      console.error("No tool call in response:", JSON.stringify(aiData));
+    const toolUseBlock = (aiData.content ?? []).find((b: { type: string }) => b.type === "tool_use");
+    if (!toolUseBlock?.input) {
+      console.error("No tool_use block:", JSON.stringify(aiData));
       return new Response(JSON.stringify({ error: "Resposta da IA inválida." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const diagnostic = JSON.parse(toolCall.function.arguments);
+    const diagnostic = toolUseBlock.input;
 
     const { data: saved, error: saveErr } = await supabase
       .from("diagnostics")
@@ -265,7 +255,7 @@ Agora gere o diagnóstico completo via tool call \`generate_diagnostic\`.`;
         executive_summary: diagnostic.executive_summary,
         recommendations: diagnostic.recommendations,
         raw_response: aiData,
-        model_used: "google/gemini-2.5-pro",
+        model_used: "claude-sonnet-4-5-20250929",
       })
       .select()
       .single();

@@ -5,13 +5,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const BRAIN_SYSTEM = "Você é o cérebro contínuo de uma operação de marketing. Produza um briefing de big picture em até 6 bullets curtos: estado atual, riscos, oportunidades e próximas ações sugeridas. Português direto, sem floreio.";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -42,7 +44,7 @@ Deno.serve(async (req) => {
       business_context: dna?.business_context ?? null,
       latest_metrics: metrics ?? null,
       latest_diagnostic: diagnostic ?? null,
-      pending_decisions: decisions.filter((d) => d.status === "pending").slice(0, 5),
+      pending_decisions: decisions.filter((d: any) => d.status === "pending").slice(0, 5),
       recent_decisions: decisions.slice(0, 5),
       important_memory: memory.slice(0, 20),
     };
@@ -52,7 +54,12 @@ Deno.serve(async (req) => {
     }
 
     // mode === 'summary' → IA produz briefing executivo
-    const prompt = [
+    if (!ANTHROPIC_API_KEY) {
+      // Fallback sem IA: retorna só o contexto bruto
+      return new Response(JSON.stringify({ context: contextBlock, briefing: null }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const userContent = [
       `Empresa: ${contextBlock.company}`,
       `Métricas mais recentes: ${JSON.stringify(metrics ?? {})}`,
       `Diagnóstico atual: score ${diagnostic?.score ?? "—"} — ${diagnostic?.executive_summary ?? "sem diagnóstico"}`,
@@ -61,24 +68,30 @@ Deno.serve(async (req) => {
       query ? `Pergunta foco: ${query}` : "",
     ].filter(Boolean).join("\n\n");
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "Você é o cérebro contínuo de uma operação de marketing. Produza um briefing de big picture em até 6 bullets curtos: estado atual, riscos, oportunidades e próximas ações sugeridas. Português direto, sem floreio." },
-          { role: "user", content: prompt },
-        ],
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        system: BRAIN_SYSTEM,
+        messages: [{ role: "user", content: userContent }],
       }),
     });
 
-    if (resp.status === 429) return new Response(JSON.stringify({ error: "Rate limit. Tente novamente em instantes." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (resp.status === 402) return new Response(JSON.stringify({ error: "Créditos esgotados na workspace Lovable AI." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (!resp.ok) throw new Error(`AI ${resp.status}`);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      console.error("Anthropic brain-context error:", resp.status, txt);
+      // Graceful: return context without briefing
+      return new Response(JSON.stringify({ context: contextBlock, briefing: null }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const data = await resp.json();
-    const briefing = data.choices?.[0]?.message?.content ?? "";
+    const briefing = data.content?.[0]?.text ?? "";
 
     return new Response(JSON.stringify({ context: contextBlock, briefing }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

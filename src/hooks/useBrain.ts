@@ -14,18 +14,28 @@ export interface MemoryRecord {
   importance: number;
   reference_table: string | null;
   reference_id: string | null;
-  raw_data: Record<string, any>;
+  raw_data: Record<string, unknown>;
   occurred_at: string;
   created_at: string;
 }
 
 export interface BrainContext {
   company: string;
-  latest_metrics: any;
-  latest_diagnostic: any;
-  pending_decisions: any[];
-  recent_decisions: any[];
-  important_memory: any[];
+  latest_metrics: unknown;
+  latest_diagnostic: unknown;
+  pending_decisions: unknown[];
+  recent_decisions: unknown[];
+  important_memory: unknown[];
+}
+
+interface IngestResponse {
+  error?: string;
+}
+
+interface BrainContextResponse {
+  error?: string;
+  briefing?: string;
+  context?: BrainContext;
 }
 
 export const useBrain = () => {
@@ -54,7 +64,7 @@ export const useBrain = () => {
     setIngesting(true);
     try {
       const { data, error } = await supabase.functions.invoke("ingest-memory", { body: input });
-      if (error || (data as any)?.error) { toast.error((data as any)?.error || error?.message || "Falha ao salvar"); return; }
+      if (error || (data as IngestResponse)?.error) { toast.error((data as IngestResponse)?.error || error?.message || "Falha ao salvar"); return; }
       toast.success("Memória registrada");
       await fetchMemories();
     } finally { setIngesting(false); }
@@ -71,9 +81,9 @@ export const useBrain = () => {
     setGeneratingBriefing(true);
     try {
       const { data, error } = await supabase.functions.invoke("brain-context", { body: { mode: "summary", query: query ?? "" } });
-      if (error || (data as any)?.error) { toast.error((data as any)?.error || error?.message || "Falha"); return; }
-      setBriefing((data as any).briefing ?? "");
-      setContext((data as any).context ?? null);
+      if (error || (data as BrainContextResponse)?.error) { toast.error((data as BrainContextResponse)?.error || error?.message || "Falha"); return; }
+      setBriefing((data as BrainContextResponse).briefing ?? "");
+      setContext((data as BrainContextResponse).context ?? null);
     } finally { setGeneratingBriefing(false); }
   };
 

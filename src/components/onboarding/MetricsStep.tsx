@@ -82,6 +82,17 @@ export const MetricsStep = ({ data, onUpdate, onNext, onBack }: Props) => {
           <Field label="ROAS médio" k="avg_roas" v={data} on={onUpdate} ph="2.8" />
         </div>
 
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Meta principal de eficiência</label>
+          <Textarea
+            rows={2}
+            value={data.target_metric || ""}
+            onChange={(e) => onUpdate("target_metric", e.target.value)}
+            placeholder="Ex: reduzir CAC para R$70, subir ROAS para 4x, elevar conversão para 3%..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
         {/* Bottlenecks */}
         <div>
           <label className="block text-sm text-foreground mb-2 font-medium">Onde sente o gargalo?</label>
@@ -114,6 +125,17 @@ export const MetricsStep = ({ data, onUpdate, onNext, onBack }: Props) => {
             value={data.current_tools || ""}
             onChange={(e) => onUpdate("current_tools", e.target.value)}
             placeholder="Ex: Meta Ads, Google Ads, GA4, RD Station, Klaviyo..."
+            className="bg-orion-surface-2 border-border focus:border-primary resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-foreground mb-2 font-medium">Observações sobre funil e operação comercial</label>
+          <Textarea
+            rows={2}
+            value={data.funnel_notes || ""}
+            onChange={(e) => onUpdate("funnel_notes", e.target.value)}
+            placeholder="Ex: lead chega quente mas time demora a responder; landing converte mal no mobile..."
             className="bg-orion-surface-2 border-border focus:border-primary resize-none"
           />
         </div>

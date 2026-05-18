@@ -1,6 +1,6 @@
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useCompanyDNA } from "@/hooks/useCompanyDNA";
-import { useUserRole } from "@/hooks/useUserRole";
+import { usePermissions } from "@/hooks/usePermissions";
 import { CheckCircle2, Circle, ArrowRight, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -19,7 +19,7 @@ interface ChecklistItem {
 export const OnboardingChecklist = () => {
   const { user } = useAuth();
   const { dna } = useCompanyDNA();
-  const { isOwner, loading: roleLoading } = useUserRole();
+  const { can, loading: roleLoading } = usePermissions();
   const { prefs, isBannerHidden, hideBanner, showBanner } = useUserPreferences();
   const [collapsed, setCollapsed] = useState(false);
   const [hasIntegration, setHasIntegration] = useState(false);
@@ -40,7 +40,7 @@ export const OnboardingChecklist = () => {
     })();
   }, [user, dna]);
 
-  if (roleLoading || !isOwner) return null;
+  if (roleLoading || !can("onboarding.view")) return null;
 
   const items: ChecklistItem[] = [
     {
@@ -86,9 +86,17 @@ export const OnboardingChecklist = () => {
 
   return (
     <div className="mb-6 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 to-orion-violet/5 overflow-hidden">
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between p-4 hover:bg-primary/5 transition-colors"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setCollapsed((c) => !c);
+          }
+        }}
+        className="w-full flex items-center justify-between p-4 hover:bg-primary/5 transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-3 text-left">
           <div className="w-10 h-10 rounded-lg orion-gradient flex items-center justify-center">
@@ -111,16 +119,18 @@ export const OnboardingChecklist = () => {
             />
           </div>
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               hideBanner(dismissId);
             }}
+            aria-label="Ocultar checklist"
             className="text-muted-foreground hover:text-foreground"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
-      </button>
+      </div>
 
       {!collapsed && (
         <div className="border-t border-border/50 divide-y divide-border/30">

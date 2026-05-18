@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useRoleDefinitions, SUGGESTED_MARKETING_ROLES } from "@/hooks/useRoleDefinitions";
+import { useRoleDefinitions } from "@/hooks/useRoleDefinitions";
 import { Plus, Trash2, Sparkles, Users } from "lucide-react";
 
 interface Props {
@@ -14,7 +15,15 @@ interface Props {
 
 export const TeamRolesStep = ({ data, onUpdate, onNext, onBack }: Props) => {
   const { roles, loading, create, remove, seedSuggested } = useRoleDefinitions();
-  const [draft, setDraft] = useState({ title: "", description: "", headcount: 1, seniority: "" });
+  const [draft, setDraft] = useState({
+    title: "",
+    description: "",
+    headcount: 1,
+    seniority: "",
+    area: "performance",
+    responsibilities: "",
+    tools: "",
+  });
 
   const handleAdd = async () => {
     if (!draft.title.trim()) return;
@@ -23,8 +32,19 @@ export const TeamRolesStep = ({ data, onUpdate, onNext, onBack }: Props) => {
       description: draft.description.trim() || undefined,
       headcount: Number(draft.headcount) || 1,
       seniority: draft.seniority || undefined,
+      area: draft.area || undefined,
+      responsibilities: draft.responsibilities.trim() || undefined,
+      tools: draft.tools.trim() || undefined,
     });
-    setDraft({ title: "", description: "", headcount: 1, seniority: "" });
+    setDraft({
+      title: "",
+      description: "",
+      headcount: 1,
+      seniority: "",
+      area: "performance",
+      responsibilities: "",
+      tools: "",
+    });
   };
 
   return (
@@ -77,6 +97,29 @@ export const TeamRolesStep = ({ data, onUpdate, onNext, onBack }: Props) => {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Decisões que exigem aprovação superior</label>
+          <Textarea
+            rows={2}
+            placeholder="Ex: novo canal, aumento de budget acima de 20%, mudança de oferta..."
+            value={data.approval_rules || ""}
+            onChange={(e) => onUpdate("approval_rules", e.target.value)}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Regras de delegação</label>
+          <Textarea
+            rows={2}
+            placeholder="Ex: Head pode delegar para gestor; gestor pode delegar para analista e designer..."
+            value={data.delegation_rules || ""}
+            onChange={(e) => onUpdate("delegation_rules", e.target.value)}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+        </div>
+      </div>
+
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Observações sobre a estrutura (opcional)</label>
         <Textarea
@@ -111,9 +154,14 @@ export const TeamRolesStep = ({ data, onUpdate, onNext, onBack }: Props) => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{r.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {r.description || "—"}
+                    {r.area || "marketing"}
                     {r.seniority ? ` • ${r.seniority}` : ""} • {r.headcount} pessoa(s)
                   </p>
+                  {(r.responsibilities || r.tools) && (
+                    <p className="text-[11px] text-muted-foreground mt-1 truncate">
+                      {[r.responsibilities, r.tools].filter(Boolean).join(" • ")}
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => remove(r.id)}
@@ -134,19 +182,35 @@ export const TeamRolesStep = ({ data, onUpdate, onNext, onBack }: Props) => {
 
         {/* Form */}
         <div className="space-y-2">
-          <Input
-            placeholder="Cargo (ex: Gestor de Tráfego)"
-            value={draft.title}
-            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-            className="bg-orion-surface-2 border-border"
-          />
-          <Input
-            placeholder="Descrição rápida"
-            value={draft.description}
-            onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-            className="bg-orion-surface-2 border-border"
-          />
-          <div className="grid grid-cols-[1fr_80px_auto] gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <Input
+              placeholder="Cargo (ex: Gestor de Tráfego)"
+              value={draft.title}
+              onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+              className="bg-orion-surface-2 border-border"
+            />
+            <Input
+              placeholder="Descrição rápida"
+              value={draft.description}
+              onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+              className="bg-orion-surface-2 border-border"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+            <Select value={draft.area} onValueChange={(value) => setDraft((d) => ({ ...d, area: value }))}>
+              <SelectTrigger className="bg-orion-surface-2 border-border">
+                <SelectValue placeholder="Área" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="leadership">Liderança</SelectItem>
+                <SelectItem value="performance">Performance</SelectItem>
+                <SelectItem value="creative">Criativo</SelectItem>
+                <SelectItem value="social">Social</SelectItem>
+                <SelectItem value="content">Conteúdo</SelectItem>
+                <SelectItem value="crm">CRM</SelectItem>
+                <SelectItem value="analytics">Analytics</SelectItem>
+              </SelectContent>
+            </Select>
             <Input
               placeholder="Senioridade"
               value={draft.seniority}
@@ -165,6 +229,19 @@ export const TeamRolesStep = ({ data, onUpdate, onNext, onBack }: Props) => {
               <Plus className="w-4 h-4" />
             </Button>
           </div>
+          <Textarea
+            rows={2}
+            placeholder="Responsabilidades principais"
+            value={draft.responsibilities}
+            onChange={(e) => setDraft((d) => ({ ...d, responsibilities: e.target.value }))}
+            className="bg-orion-surface-2 border-border resize-none"
+          />
+          <Input
+            placeholder="Ferramentas usadas por esse cargo"
+            value={draft.tools}
+            onChange={(e) => setDraft((d) => ({ ...d, tools: e.target.value }))}
+            className="bg-orion-surface-2 border-border"
+          />
         </div>
       </div>
 

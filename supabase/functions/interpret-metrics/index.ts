@@ -23,10 +23,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -107,21 +107,24 @@ ${JSON.stringify(campaignSummaries, null, 2)}
 
 Gere as decisões via tool call \`generate_decisions\`. Lembre: incluir metrics_snapshot, e quando aplicável audience_variants ou creative_variants.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 8192,
+        system: SYSTEM_PROMPT,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
         tools: [{
-          type: "function",
-          function: {
-            name: "generate_decisions",
-            description: "Devolve decisões priorizadas baseadas nas métricas, com snapshot de números e variantes de teste quando aplicável.",
-            parameters: {
+          name: "generate_decisions",
+          description: "Devolve decisões priorizadas baseadas nas métricas, com snapshot de números e variantes de teste quando aplicável.",
+          input_schema: {
               type: "object",
               properties: {
                 executive_read: { type: "string", description: "Leitura geral em 1-2 frases." },
@@ -206,37 +209,32 @@ Gere as decisões via tool call \`generate_decisions\`. Lembre: incluir metrics_
               },
               required: ["executive_read", "decisions"],
               additionalProperties: false,
-            },
           },
         }],
-        tool_choice: { type: "function", function: { name: "generate_decisions" } },
+        tool_choice: { type: "tool", name: "generate_decisions" },
       }),
     });
 
     if (!aiResponse.ok) {
+      const t = await aiResponse.text();
+      console.error("Anthropic error:", aiResponse.status, t);
       if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente." }),
+        return new Response(JSON.stringify({ error: "Rate limit da Anthropic. Tente novamente." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      const t = await aiResponse.text();
-      console.error("AI error:", aiResponse.status, t);
       return new Response(JSON.stringify({ error: "Falha ao interpretar métricas." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const aiData = await aiResponse.json();
-    const tc = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!tc?.function?.arguments) {
-      console.error("No tool call:", JSON.stringify(aiData));
+    const toolUseBlock = (aiData.content ?? []).find((b: { type: string }) => b.type === "tool_use");
+    if (!toolUseBlock?.input) {
+      console.error("No tool_use block:", JSON.stringify(aiData));
       return new Response(JSON.stringify({ error: "Resposta da IA inválida." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const parsed = JSON.parse(tc.function.arguments);
+    const parsed = toolUseBlock.input;
 
     const validCampaignIds = new Set(campaigns.map((c: any) => c.id));
     const inserts = (parsed.decisions || []).map((d: any) => ({
