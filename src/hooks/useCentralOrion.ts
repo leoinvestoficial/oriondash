@@ -117,6 +117,7 @@ export interface PublicationCard {
 export interface CentralOrionData {
   loading: boolean;
   companyName: string | null;
+  periodDays: number;
   periodLabel: string;
   lastUpdated: string;
   dataSource: DataSourceKind;
@@ -135,6 +136,8 @@ export interface CentralOrionData {
   finance: MarketingFinanceData;
   activeCampaigns: number;
   pendingTasks: number;
+  overdueTasks: number;
+  crmOpportunities: number;
   hasNonRealData: boolean;
   dataNotice: string | null;
   createTaskFromPriority: () => Promise<void>;
@@ -188,10 +191,10 @@ const severityFromDecision = (decision?: DecisionRecord): CentralUrgency => {
   return "media";
 };
 
-export const useCentralOrion = (): CentralOrionData => {
+export const useCentralOrion = (days: number = 7): CentralOrionData => {
   const { user } = useAuth();
   const { dna, loading: dnaLoading } = useCompanyDNA();
-  const { metrics, loading: metricsLoading } = useDashboardMetrics(7);
+  const { metrics, loading: metricsLoading } = useDashboardMetrics(days);
   const { latest: diagnostic, loading: diagnosticLoading } = useDiagnostic();
   const { decisions, loading: decisionsLoading } = useDecisions();
   const { memories, loading: memoriesLoading } = useBrain();
@@ -216,16 +219,14 @@ export const useCentralOrion = (): CentralOrionData => {
   const { target: financeTarget, loading: financeTargetLoading } = useMarketingFinanceTargets();
   const [approvals, setApprovals] = useState<ApprovalRow[]>([]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [crmOpportunities, setCrmOpportunities] = useState(0);
   const [localLoading, setLocalLoading] = useState(true);
 
   const fetchOperationalData = useCallback(async () => {
-    if (!user) {
-      setLocalLoading(false);
-      return;
-    }
-
+    if (!user) { setLocalLoading(false); return; }
     setLocalLoading(true);
-    const [approvalsRes, tasksRes] = await Promise.all([
+    const today = new Date().toISOString().split("T")[0];
+    const [approvalsRes, tasksRes, crmRes] = await Promise.all([
       supabase
         .from("approvals")
         .select("id,title,category,impact,status,created_at,requested_by,due_date")
@@ -238,10 +239,15 @@ export const useCentralOrion = (): CentralOrionData => {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20),
+      supabase
+        .from("crm_opportunities")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .in("status", ["open", "qualified", "proposal"]),
     ]);
-
     setApprovals((approvalsRes.data as ApprovalRow[]) || []);
     setTasks((tasksRes.data as TaskRow[]) || []);
+    setCrmOpportunities(crmRes.count || 0);
     setLocalLoading(false);
   }, [user]);
 
@@ -259,6 +265,8 @@ export const useCentralOrion = (): CentralOrionData => {
       : null;
   const activeCampaigns = metrics?.campaignsList.filter((c) => c.status === "active").length || 0;
   const pendingTasks = tasks.filter((t) => t.status !== "done").length;
+  const today = new Date().toISOString().split("T")[0];
+  const overdueTasks = tasks.filter((t) => t.status !== "done" && t.due_date && t.due_date < today).length;
   const pendingApprovals = approvals.filter((a) => a.status === "pending");
 
   const finance: MarketingFinanceData = useMemo(() => {
@@ -742,10 +750,13 @@ export const useCentralOrion = (): CentralOrionData => {
     await refetch();
   }, [cancelPersistedPublication, publicationJobs, refetch]);
 
+  const periodLabel = days === 7 ? "Últimos 7 dias" : days === 30 ? "Últimos 30 dias" : `Últimos ${days} dias`;
+
   return {
     loading: dnaLoading || metricsLoading || diagnosticLoading || decisionsLoading || memoriesLoading || businessLoading || financeTargetLoading || localLoading || orchestrationsLoading || publicationsLoading,
     companyName: dna?.company_name ?? null,
-    periodLabel: "Ultimos 7 dias",
+    periodDays: days,
+    periodLabel,
     lastUpdated: new Date().toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
     dataSource,
     hasNonRealData,
@@ -774,6 +785,8 @@ export const useCentralOrion = (): CentralOrionData => {
     finance,
     activeCampaigns,
     pendingTasks,
+    overdueTasks,
+    crmOpportunities,
     createTaskFromPriority,
     createTaskFromAction,
     prepareOrchestrationFromPriority,
