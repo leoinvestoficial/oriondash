@@ -1,0 +1,57 @@
+
+> orion-dashboard@0.0.0 lint
+> eslint .
+
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/components/ui/button.tsx
+  21:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/components/ui/form-field.tsx
+  19:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/components/ui/form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/components/ui/navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/components/ui/sidebar.tsx
+  637:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/components/ui/sonner.tsx
+  27:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/components/ui/toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/contexts/AuthContext.tsx
+  20:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/pages/Campaigns.tsx
+  308:42  warning  React Hook useEffect has a missing dependency: 'fetchCampaigns'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/pages/ContentCalendar.tsx
+  222:37  warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/pages/Funnels.tsx
+  51:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  70:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/pages/Integrations.tsx
+  86:6  warning  React Hook useEffect has missing dependencies: 'fetchCredentials' and 'fetchIntegrations'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/pages/Intelligence.tsx
+  37:36  warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/pages/Strategy.tsx
+  46:36  warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/pages/Studio.tsx
+  66:39  warning  React Hook useEffect has a missing dependency: 'fetchBriefs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  77:6   warning  React Hook useEffect has a missing dependency: 'fetchBriefs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/leonardovarela/Desktop/ORION DASHBOARD/src/pages/Team.tsx
+  57:42  warning  React Hook useEffect has a missing dependency: 'fetch'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 18 problems (0 errors, 18 warnings)
+

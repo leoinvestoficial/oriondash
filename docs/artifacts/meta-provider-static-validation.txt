@@ -1,0 +1,6 @@
+src/hooks/usePublicationJobs.ts:200:      level: job.publication_type === "paid_ad" ? "priority" : "simple",
+src/lib/publicationProviders.ts:15:  | "paid_ad"
+src/lib/publicationProviders.ts:127:      .from("ad_integrations")
+src/lib/publicationProviders.ts:164:    if (publicationJob.publication_type === "paid_ad") {
+src/lib/publicationProviders.ts:175:      error_message: "Provider Meta preparado, mas publicação/agendamento real permanece inativo até configurar Graph API e permissões.",
+src/lib/publicationProviders.ts:216:    import.meta.env.VITE_ENABLE_META_PUBLICATION_PROVIDER === "true" &&

@@ -1,0 +1,8 @@
+Initialising login role...
+┌───────────────────────┬────────────────────┬───────────────────────────┬─────────────────┬──────────────────────┬──────────────────┬──────────────────┬───────────────────┐
+│ action_orchestrations │ operational_memory │ marketing_finance_targets │ agency_accounts │ publication_policies │ publication_jobs │ publication_logs │ executive_reports │
+├───────────────────────┼────────────────────┼───────────────────────────┼─────────────────┼──────────────────────┼──────────────────┼──────────────────┼───────────────────┤
+│ action_orchestrations │ operational_memory │ marketing_finance_targets │ agency_accounts │ publication_policies │ publication_jobs │ publication_logs │ executive_reports │
+└───────────────────────┴────────────────────┴───────────────────────────┴─────────────────┴──────────────────────┴──────────────────┴──────────────────┴───────────────────┘
+A new version of Supabase CLI is available: v2.98.2 (currently installed v2.90.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
