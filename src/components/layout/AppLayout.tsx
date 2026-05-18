@@ -13,11 +13,7 @@ import { startEmployeeTour, startOwnerTour } from "@/lib/tours";
 import { modeForRole, normalizeOrionRole } from "@/lib/productRoles";
 import { getNavigationItems, type NavigationItem } from "@/config/navigation";
 import { ModeSwitcher } from "@/components/layout/ModeSwitcher";
-import {
-  LogOut,
-  PlayCircle,
-  Menu,
-} from "lucide-react";
+import { LogOut, PlayCircle, Menu } from "lucide-react";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -37,89 +33,178 @@ interface SidebarBodyProps {
   canUsePro: boolean;
 }
 
+// ─── Nav item ─────────────────────────────────────────────────────────────────
+const NavItem = ({
+  item,
+  isActive,
+  onNavigate,
+}: {
+  item: NavigationItem;
+  isActive: boolean;
+  onNavigate?: () => void;
+}) => (
+  <Link
+    to={item.path}
+    data-tour={`nav-${item.tour}`}
+    onClick={onNavigate}
+    className={cn(
+      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all min-h-[40px]",
+      isActive
+        ? "bg-primary/12 text-primary font-medium"
+        : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
+    )}
+  >
+    <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground/70")} />
+    <span className="flex-1 min-w-0 truncate">{item.label}</span>
+    {item.badge != null && item.badge > 0 && (
+      <span className="min-w-[18px] h-[18px] rounded-full bg-destructive text-[10px] flex items-center justify-center text-primary-foreground font-semibold px-1">
+        {item.badge > 99 ? "99+" : item.badge}
+      </span>
+    )}
+  </Link>
+);
+
+// ─── Section divider ─────────────────────────────────────────────────────────
+const SectionDivider = ({ label }: { label: string }) => (
+  <div className="flex items-center gap-2 px-3 pt-4 pb-1">
+    <div className="flex-1 h-px bg-border/60" />
+    <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 shrink-0">
+      {label}
+    </p>
+  </div>
+);
+
+// ─── Sidebar body ─────────────────────────────────────────────────────────────
 const SidebarBody = ({
-  visibleItems, pathname, initials, displayName, email, onNavigate, onSignOut, onReplayTour,
-  viewMode, onViewModeChange, canUsePro,
+  visibleItems,
+  pathname,
+  initials,
+  displayName,
+  email,
+  onNavigate,
+  onSignOut,
+  onReplayTour,
+  viewMode,
+  onViewModeChange,
+  canUsePro,
 }: SidebarBodyProps) => {
-  const grouped = visibleItems.reduce<Record<string, NavigationItem[]>>((acc, item) => {
-    const group = viewMode === "pro" ? item.group || "Outros" : "Simplificado";
-    acc[group] = [...(acc[group] || []), item];
-    return acc;
-  }, {});
+  const regularItems = visibleItems.filter((i) => !i.isolated);
+  const isolatedItems = visibleItems.filter((i) => i.isolated);
+
+  // ── Pro mode: group by item.group ──────────────────────────────────────────
+  const renderProItems = () => {
+    const grouped = regularItems.reduce<Record<string, NavigationItem[]>>((acc, item) => {
+      const g = item.group || "Outros";
+      acc[g] = [...(acc[g] || []), item];
+      return acc;
+    }, {});
+
+    return Object.entries(grouped).map(([group, items]) => (
+      <div key={group} className="space-y-0.5">
+        <p className="px-3 pt-3 pb-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">
+          {group}
+        </p>
+        {items.map((item) => (
+          <NavItem
+            key={`${item.path}-${item.tour}`}
+            item={item}
+            isActive={pathname === item.path}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </div>
+    ));
+  };
+
+  // ── Simplified mode: sectionLabel dividers ────────────────────────────────
+  const renderSimplifiedItems = () => {
+    const nodes: React.ReactNode[] = [];
+    for (const item of regularItems) {
+      if (item.sectionLabel) {
+        nodes.push(<SectionDivider key={`sep-${item.sectionLabel}`} label={item.sectionLabel} />);
+      }
+      nodes.push(
+        <NavItem
+          key={`${item.path}-${item.tour}`}
+          item={item}
+          isActive={pathname === item.path}
+          onNavigate={onNavigate}
+        />
+      );
+    }
+    return nodes;
+  };
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-center px-5 py-5 border-b border-border">
-        <img src={orionLogo} alt="Orion" className="w-10 h-10 rounded-lg object-cover" />
+      {/* Logo */}
+      <div className="flex items-center justify-center px-5 py-4 border-b border-border/60">
+        <img src={orionLogo} alt="Orion" className="w-9 h-9 rounded-lg object-cover" />
       </div>
 
-      <div className="border-b border-border px-3 py-3">
+      {/* Mode switcher */}
+      <div className="border-b border-border/60 px-3 py-2.5">
         <ModeSwitcher value={viewMode} onChange={onViewModeChange} canUsePro={canUsePro} />
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-        {Object.entries(grouped).map(([group, items]) => (
-          <div key={group} className="space-y-1">
-            {viewMode === "pro" && (
-              <p className="px-3 pb-1 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                {group}
-              </p>
-            )}
-            {items.map((item) => {
-        const isActive = pathname === item.path;
-        return (
-          <Link
-            key={`${item.path}-${item.tour}`}
-            to={item.path}
-            data-tour={`nav-${item.tour}`}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all min-h-[44px]",
-              isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            )}
-          >
-            <item.icon className="w-4 h-4 shrink-0" />
-            <span className="flex-1 min-w-0 truncate">{item.label}</span>
-            {item.badge && (
-              <span className="w-5 h-5 rounded-full bg-orion-coral text-[10px] flex items-center justify-center text-primary-foreground font-medium">
-                {item.badge}
-              </span>
-            )}
-          </Link>
-        );
-      })}
-          </div>
-        ))}
+      {/* Main nav */}
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto scrollbar-none">
+        {viewMode === "pro" ? renderProItems() : renderSimplifiedItems()}
       </nav>
 
-      <div className="px-3 pb-2 space-y-1 border-t border-border pt-4">
-      <button
-        onClick={() => { onReplayTour(); onNavigate?.(); }}
-        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all text-muted-foreground hover:text-foreground hover:bg-muted/30 min-h-[44px]"
-      >
-        <PlayCircle className="w-4 h-4" />
-        <span>Refazer tour</span>
-      </button>
+      {/* Isolated items (Company Brain) */}
+      {isolatedItems.length > 0 && (
+        <div className="px-2 pt-2 pb-1 border-t border-border/60">
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <div className="flex-1 h-px bg-border/40" />
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 shrink-0">
+              Memória
+            </p>
+          </div>
+          {isolatedItems.map((item) => (
+            <NavItem
+              key={`${item.path}-${item.tour}`}
+              item={item}
+              isActive={pathname === item.path}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Tour */}
+      <div className="px-2 pb-1 border-t border-border/60 pt-2">
+        <button
+          onClick={() => { onReplayTour(); onNavigate?.(); }}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-muted-foreground hover:text-foreground hover:bg-muted/20 min-h-[40px]"
+        >
+          <PlayCircle className="w-4 h-4 shrink-0 text-muted-foreground/60" />
+          <span>Refazer tour</span>
+        </button>
       </div>
 
-      <div className="px-4 py-3 border-t border-border flex items-center gap-3">
-      <div className="w-8 h-8 rounded-full bg-orion-surface-3 flex items-center justify-center text-xs text-muted-foreground">
-        {initials}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-foreground truncate">{displayName}</p>
-        <p className="text-[10px] text-muted-foreground truncate">{email}</p>
-      </div>
-      <button onClick={onSignOut} className="text-muted-foreground hover:text-foreground transition-colors p-2 -m-2">
-        <LogOut className="w-4 h-4" />
-      </button>
+      {/* User */}
+      <div className="px-3 py-3 border-t border-border/60 flex items-center gap-3">
+        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[11px] text-primary font-semibold shrink-0">
+          {initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-foreground font-medium truncate">{displayName}</p>
+          <p className="text-[10px] text-muted-foreground truncate">{email}</p>
+        </div>
+        <button
+          onClick={onSignOut}
+          className="text-muted-foreground/60 hover:text-foreground transition-colors p-1.5 -m-1 rounded-md hover:bg-muted/20"
+          title="Sair"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );
 };
 
+// ─── App layout ───────────────────────────────────────────────────────────────
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const { user, signOut } = useAuth();
@@ -134,17 +219,14 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const productRole = normalizeOrionRole(role);
   const productMode = modeForRole(productRole);
   const canSeeOwnerOnly = isOwner || isAdmin || productRole === "agency_admin";
+
   const visibleItems = getNavigationItems(viewMode)
     .filter((item) => !item.productModes || item.productModes.includes(productMode))
     .filter((item) => !item.roles || item.roles.includes(productRole))
     .filter((item) => !item.ownerOnly || canSeeOwnerOnly);
 
   useEffect(() => {
-    if (!user || !canSeeOwnerOnly) {
-      setPendingApprovals(0);
-      return;
-    }
-
+    if (!user || !canSeeOwnerOnly) { setPendingApprovals(0); return; }
     let cancelled = false;
     supabase
       .from("approvals")
@@ -154,83 +236,64 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       .then(({ count, error }) => {
         if (!cancelled && !error) setPendingApprovals(count || 0);
       });
-
     return () => { cancelled = true; };
   }, [user, canSeeOwnerOnly]);
 
-  const itemsWithBadges = visibleItems.map((item) => (
+  const itemsWithBadges = visibleItems.map((item) =>
     item.path === "/approvals" ? { ...item, badge: pendingApprovals || undefined } : item
-  ));
+  );
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuário";
-  const initials = displayName
-    .split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
+  const handleSignOut = async () => { await signOut(); navigate("/auth"); };
 
   const replayTour = () => {
     if (canSeeOwnerOnly) startOwnerTour(() => completeTour());
     else startEmployeeTour(() => completeTour());
   };
 
+  const sidebarProps: SidebarBodyProps = {
+    visibleItems: itemsWithBadges,
+    pathname: location.pathname,
+    initials,
+    displayName,
+    email: user?.email,
+    onSignOut: handleSignOut,
+    onReplayTour: replayTour,
+    viewMode,
+    onViewModeChange: setViewMode,
+    canUsePro,
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar */}
       {!isMobile && (
-        <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
-          <SidebarBody
-            visibleItems={itemsWithBadges}
-            pathname={location.pathname}
-            initials={initials}
-            displayName={displayName}
-            email={user?.email}
-            onSignOut={handleSignOut}
-            onReplayTour={replayTour}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            canUsePro={canUsePro}
-          />
+        <aside className="w-56 border-r border-border/60 bg-card/50 flex flex-col shrink-0 sticky top-0 h-screen">
+          <SidebarBody {...sidebarProps} />
         </aside>
       )}
 
       <main className="flex-1 overflow-auto min-w-0">
         {/* Mobile top bar */}
         {isMobile && (
-          <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-card/95 backdrop-blur border-b border-border">
+          <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-card/95 backdrop-blur border-b border-border/60">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <button
                   aria-label="Abrir menu"
-                  className="w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:bg-muted/30"
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/20"
                 >
                   <Menu className="w-5 h-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64 bg-card border-border">
-                <SidebarBody
-                  visibleItems={itemsWithBadges}
-                  pathname={location.pathname}
-                  initials={initials}
-                  displayName={displayName}
-                  email={user?.email}
-                  onNavigate={() => setOpen(false)}
-                  onSignOut={handleSignOut}
-                  onReplayTour={replayTour}
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
-                  canUsePro={canUsePro}
-                />
+              <SheetContent side="left" className="p-0 w-56 bg-card border-border/60">
+                <SidebarBody {...sidebarProps} onNavigate={() => setOpen(false)} />
               </SheetContent>
             </Sheet>
-            <img src={orionLogo} alt="Orion" className="w-8 h-8 rounded-md object-cover" />
-            <div className="w-10" />
+            <img src={orionLogo} alt="Orion" className="w-7 h-7 rounded-md object-cover" />
+            <div className="w-9" />
           </header>
         )}
         {children}
