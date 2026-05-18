@@ -181,7 +181,7 @@ const SimplifiedCentralView = ({
                   </div>
                   <div className="flex gap-2 sm:flex-col">
                     <Button size="sm" onClick={() => data.createTaskFromAction(action)}>Criar tarefa</Button>
-                    <Link to={action.ctaHref}><Button size="sm" variant="outline">Ver detalhes no Pro</Button></Link>
+                    <Link to={action.ctaHref}><Button size="sm" variant="outline">{action.ctaLabel}</Button></Link>
                   </div>
                 </div>
               </div>

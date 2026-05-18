@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const CentralOrion = lazy(() => import("./pages/CentralOrion"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -18,6 +19,7 @@ const Tasks = lazy(() => import("./pages/Tasks"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const OAuthCallback = lazy(() => import("./pages/OAuthCallback"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
+const CampaignDetail = lazy(() => import("./pages/CampaignDetail"));
 const ContentCalendar = lazy(() => import("./pages/ContentCalendar"));
 const Diagnostico = lazy(() => import("./pages/Diagnostico"));
 const Decisoes = lazy(() => import("./pages/Decisoes"));
@@ -71,6 +73,7 @@ const AppRoutes = () => (
       <Route path="/central" element={<ProtectedRoute><CentralOrion /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+      <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignDetail /></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><ContentCalendar /></ProtectedRoute>} />
       <Route path="/approvals" element={<ProtectedRoute><Approvals /></ProtectedRoute>} />
       <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
@@ -99,17 +102,19 @@ const AppRoutes = () => (
   </Suspense>
 );
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
