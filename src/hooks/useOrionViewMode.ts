@@ -10,6 +10,8 @@ import {
 } from "@/lib/productRoles";
 
 const STORAGE_KEY = "orion:view_mode";
+// Bump this when the default changes so old stored values are ignored for eligible roles
+const STORAGE_VERSION = "v2";
 
 const isViewMode = (value: string | null): value is OrionViewMode =>
   value === "simplified" || value === "pro";
@@ -25,7 +27,13 @@ export const useOrionViewMode = () => {
 
   const [viewMode, setViewModeState] = useState<OrionViewMode>(() => {
     if (typeof window === "undefined") return defaultMode;
-    // Use storageKey (per-user) to avoid one user contaminating another's preference
+    // One-time migration: if the stored version doesn't match current, reset to new default
+    const versionKey = `${storageKey}:version`;
+    if (window.localStorage.getItem(versionKey) !== STORAGE_VERSION) {
+      window.localStorage.setItem(storageKey, defaultMode);
+      window.localStorage.setItem(versionKey, STORAGE_VERSION);
+      return defaultMode;
+    }
     const stored = window.localStorage.getItem(storageKey);
     return isViewMode(stored) ? stored : defaultMode;
   });

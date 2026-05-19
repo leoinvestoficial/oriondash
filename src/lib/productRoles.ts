@@ -45,6 +45,7 @@ export const canApproveForRole = (role: OrionRole) =>
 export const canUseProView = (role: OrionRole) => role !== "client_viewer";
 
 export const defaultViewModeForRole = (role: OrionRole): OrionViewMode => {
-  if (role === "owner" || role === "client_viewer") return "simplified";
+  // client_viewer has read-only simplified access; everyone else defaults to Pro
+  if (role === "client_viewer") return "simplified";
   return "pro";
 };

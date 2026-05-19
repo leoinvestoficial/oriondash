@@ -1,12 +1,7 @@
 /**
- * OnboardingWelcome
- *
- * Tela de boas-vindas do Company DNA.
- * Não pergunta mais "Sou dono / marketer / agência" como se isso
- * definisse o DNA da empresa — a experiência de interface (Simplificado/Pro)
- * é configurada na sidebar e em Configurações, de forma independente.
- *
- * O DNA da empresa é único para todos os perfis.
+ * OnboardingWelcome — tela de boas-vindas do Company DNA.
+ * O DNA da empresa é único: não há seleção de perfil/persona aqui.
+ * A experiência de interface (Simplificado/Pro) é configurada na sidebar.
  */
 import { Button } from "@/components/ui/button";
 import { OperationalLoopAnimation } from "@/components/onboarding/OperationalLoopAnimation";
@@ -76,9 +71,7 @@ export const OnboardingWelcome = ({ onStart }: OnboardingWelcomeProps) => (
     </Button>
 
     <p className="mt-4 text-xs text-muted-foreground/50">
-      Você é dono do negócio, gestor de marketing ou trabalha em agência?
-      A experiência de interface é configurada separadamente em{" "}
-      <span className="text-muted-foreground">Configurações</span>.
+      Salva automaticamente. Você pode pausar e continuar de onde parou.
     </p>
   </div>
 );
