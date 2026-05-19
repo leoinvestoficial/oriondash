@@ -24,33 +24,29 @@ const DENSITY_OPTIONS: Array<{
   label: string;
   description: string;
   icon: typeof User;
-  matchesPersona: Persona;
 }> = [
   {
     id: "simple",
-    label: "Simples (Owner)",
-    description: "Linguagem clara, 2 KPIs principais, ações grandes. Ideal pra dono do negócio sem time de marketing.",
+    label: "Simplificado",
+    description: "Linguagem clara, KPIs essenciais, ações destacadas. Ótimo para quem quer clareza e foco operacional.",
     icon: User,
-    matchesPersona: "owner",
   },
   {
     id: "detailed",
-    label: "Detalhado (Marketer)",
-    description: "Default. 4-5 KPIs, controle granular. Ideal pra profissional de marketing solo ou em time enxuto.",
+    label: "Detalhado",
+    description: "4–5 KPIs, controle granular sobre campanhas, tarefas e métricas. Padrão para operação de marketing.",
     icon: Users,
-    matchesPersona: "marketer",
   },
   {
     id: "pro",
-    label: "Pro (Agência)",
-    description: "Alta densidade, multi-cliente, atalhos pro avançado. Ideal pra agência atendendo vários clientes.",
+    label: "Pro",
+    description: "Alta densidade informacional, múltiplos módulos visíveis, atalhos avançados e visão estratégica completa.",
     icon: Building2,
-    matchesPersona: "agency",
   },
 ];
 
 const Settings = () => {
-  const { density, setDensity, persona, loading } = useDensity();
+  const { density, setDensity, loading } = useDensity();
   const { policies, loading: policiesLoading, available: policiesAvailable, savePolicy } = usePublicationPolicies();
   const [saving, setSaving] = useState<DensityMode | null>(null);
   const [policyForm, setPolicyForm] = useState<PublicationPolicyForm>(DEFAULT_PUBLICATION_POLICY_FORM);
@@ -117,48 +113,37 @@ const Settings = () => {
             <p className="text-xs text-muted-foreground mt-1">
               Controla quanto detalhe o Orion mostra em cada tela. Você pode mudar a qualquer momento.
             </p>
-            {persona && (
-              <p className="text-[11px] text-muted-foreground mt-2">
-                Persona detectada no onboarding: <span className="font-semibold text-foreground capitalize">{persona}</span>.
-              </p>
-            )}
-          </div>
+            </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {DENSITY_OPTIONS.map((opt) => {
               const Icon = opt.icon;
               const isActive = opt.id === density;
               const isSaving = saving === opt.id;
-              const matchesCurrentPersona = persona === opt.matchesPersona;
               return (
                 <button
                   key={opt.id}
                   onClick={() => handleSelect(opt.id)}
                   disabled={saving !== null}
                   className={cn(
-                    "text-left p-4 rounded-xl border-2 transition-all flex flex-col gap-2 min-h-[160px]",
+                    "text-left p-4 rounded-xl border-2 transition-all flex flex-col gap-2 min-h-[140px]",
                     isActive
                       ? "border-primary bg-primary/5"
                       : "border-border bg-background hover:border-primary/50 hover:bg-muted/30",
                     "disabled:opacity-60 disabled:cursor-wait",
                   )}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center",
-                        isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
-                      )}>
-                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
-                      </div>
-                      {isActive && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary uppercase tracking-wide">
-                          <Check className="w-3 h-3" /> Atual
-                        </span>
-                      )}
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center",
+                      isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
+                    )}>
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
                     </div>
-                    {matchesCurrentPersona && !isActive && (
-                      <span className="text-[10px] text-muted-foreground">recomendado</span>
+                    {isActive && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary uppercase tracking-wide">
+                        <Check className="w-3 h-3" /> Atual
+                      </span>
                     )}
                   </div>
                   <span className="text-sm font-semibold text-foreground">{opt.label}</span>

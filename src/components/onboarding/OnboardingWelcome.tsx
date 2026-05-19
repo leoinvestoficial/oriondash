@@ -1,121 +1,84 @@
-import { useState } from "react";
+/**
+ * OnboardingWelcome
+ *
+ * Tela de boas-vindas do Company DNA.
+ * Não pergunta mais "Sou dono / marketer / agência" como se isso
+ * definisse o DNA da empresa — a experiência de interface (Simplificado/Pro)
+ * é configurada na sidebar e em Configurações, de forma independente.
+ *
+ * O DNA da empresa é único para todos os perfis.
+ */
 import { Button } from "@/components/ui/button";
-import { useDensity, type Persona } from "@/hooks/useDensity";
-import { Loader2, User, Users, Building2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { OperationalLoopAnimation } from "@/components/onboarding/OperationalLoopAnimation";
+import { ArrowRight, Brain } from "lucide-react";
 
 interface OnboardingWelcomeProps {
   onStart: () => void;
 }
 
-interface PersonaOption {
-  id: Persona;
-  label: string;
-  description: string;
-  icon: typeof User;
-  hint: string;
-}
-
-const PERSONA_OPTIONS: PersonaOption[] = [
-  {
-    id: "owner",
-    label: "Sou dono do negócio",
-    description: "Não tenho time de marketing. Quero o Orion como meu time.",
-    icon: User,
-    hint: "Linguagem clara, foco em ações e resultados.",
-  },
-  {
-    id: "marketer",
-    label: "Sou de marketing",
-    description: "Trabalho em marketing solo ou em time enxuto.",
-    icon: Users,
-    hint: "Controle granular, métricas detalhadas.",
-  },
-  {
-    id: "agency",
-    label: "Sou agência",
-    description: "Atendo vários clientes e quero produtividade.",
-    icon: Building2,
-    hint: "Multi-cliente, alta densidade, atalhos pro avançado.",
-  },
-];
-
-export const OnboardingWelcome = ({ onStart }: OnboardingWelcomeProps) => {
-  const { setPersona, persona: existingPersona } = useDensity();
-  const [selecting, setSelecting] = useState<Persona | null>(null);
-
-  const handlePersonaSelect = async (chosen: Persona) => {
-    setSelecting(chosen);
-    try {
-      await setPersona(chosen);
-      onStart();
-    } catch {
-      setSelecting(null);
-    }
-  };
-
-  return (
-    <div className="max-w-3xl mx-auto text-center animate-fade-in px-2">
-      <div className="w-20 h-20 mx-auto mb-8 rounded-2xl orion-gradient flex items-center justify-center orion-glow">
-        <span className="text-3xl text-primary-foreground font-bold">O</span>
-      </div>
-
-      <h1 className="text-display text-foreground mb-4">
-        Bem-vindo ao <span className="orion-text-gradient">Orion</span>
-      </h1>
-
-      <p className="text-base sm:text-lg text-muted-foreground mb-3">
-        Antes de começar, conta quem vai usar isso no dia a dia.
-      </p>
-
-      <p className="text-sm text-muted-foreground mb-8 max-w-lg mx-auto">
-        O Orion adapta a interface e a forma de comunicar com base na sua resposta. Você pode trocar nas configurações depois.
-      </p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
-        {PERSONA_OPTIONS.map((opt) => {
-          const Icon = opt.icon;
-          const isSelected = selecting === opt.id;
-          const isExisting = existingPersona === opt.id;
-          return (
-            <button
-              key={opt.id}
-              onClick={() => handlePersonaSelect(opt.id)}
-              disabled={selecting !== null}
-              className={cn(
-                "text-left p-4 rounded-xl border-2 transition-all flex flex-col gap-2",
-                "hover:border-primary hover:bg-primary/5",
-                isExisting ? "border-primary bg-primary/5" : "border-border bg-card",
-                "disabled:opacity-60 disabled:cursor-wait",
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  {isSelected ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
-                </div>
-                <span className="text-sm font-semibold text-foreground">{opt.label}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">{opt.description}</p>
-              <p className="text-[11px] text-muted-foreground/80 mt-auto pt-2 border-t border-border/50">
-                {opt.hint}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="text-xs text-muted-foreground mb-3">
-        Em seguida, vamos construir o <strong className="text-foreground">Company DNA</strong> — 10 etapas curtas, ~15 minutos. Você pode pausar e retomar.
-      </p>
-
-      <Button
-        onClick={onStart}
-        variant="ghost"
-        size="sm"
-        className="text-muted-foreground hover:text-foreground"
-      >
-        Pular essa pergunta
-      </Button>
+export const OnboardingWelcome = ({ onStart }: OnboardingWelcomeProps) => (
+  <div className="max-w-2xl mx-auto text-center animate-fade-in px-4">
+    {/* Logo */}
+    <div className="w-20 h-20 mx-auto mb-8 rounded-2xl orion-gradient flex items-center justify-center orion-glow">
+      <Brain className="w-9 h-9 text-primary-foreground" />
     </div>
-  );
-};
+
+    {/* Headline */}
+    <h1 className="text-display text-foreground mb-3">
+      Bem-vindo ao <span className="orion-text-gradient">Orion</span>
+    </h1>
+    <p className="text-base text-muted-foreground mb-2">
+      Antes de começar, vamos construir o <strong className="text-foreground">Company DNA</strong> da sua empresa.
+    </p>
+    <p className="text-sm text-muted-foreground/80 mb-10 max-w-lg mx-auto leading-relaxed">
+      Ele é a base de tudo: o Orion usa essas informações para entender seu negócio,
+      público, oferta e objetivos — e operar como uma extensão da sua equipe de marketing.
+    </p>
+
+    {/* Loop animation */}
+    <div className="mb-10 py-6 px-4 rounded-2xl border border-border/60 bg-card/50">
+      <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-5">
+        Como o Orion opera
+      </p>
+      <OperationalLoopAnimation showLabels autoPlay interval={1600} />
+    </div>
+
+    {/* What to expect */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10 text-left">
+      {[
+        {
+          title: "~15 minutos",
+          desc: "10 etapas curtas sobre sua empresa, mercado, público e objetivos.",
+        },
+        {
+          title: "Pode pausar",
+          desc: "Salva automaticamente a cada etapa. Continue de onde parou.",
+        },
+        {
+          title: "Sempre atualizável",
+          desc: "Altere o DNA sempre que sua estratégia ou produto evoluir.",
+        },
+      ].map(({ title, desc }) => (
+        <div key={title} className="rounded-xl border border-border/60 bg-card p-4 space-y-1.5">
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
+        </div>
+      ))}
+    </div>
+
+    {/* CTA */}
+    <Button
+      onClick={onStart}
+      size="lg"
+      className="gap-2 orion-gradient text-primary-foreground px-8"
+    >
+      Começar a construir o DNA <ArrowRight className="w-4 h-4" />
+    </Button>
+
+    <p className="mt-4 text-xs text-muted-foreground/50">
+      Você é dono do negócio, gestor de marketing ou trabalha em agência?
+      A experiência de interface é configurada separadamente em{" "}
+      <span className="text-muted-foreground">Configurações</span>.
+    </p>
+  </div>
+);
