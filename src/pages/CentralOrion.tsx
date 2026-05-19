@@ -381,10 +381,12 @@ const SimplifiedCentralView = ({
         </header>
 
         {/* ── Metrics first fold ─────────────────────────────────────────── */}
-        <MetricsGrid data={data} />
+        <div data-tour="metrics-grid">
+          <MetricsGrid data={data} />
+        </div>
 
         {/* ── Priority hero ──────────────────────────────────────────────── */}
-        <Card className="border-primary/25 bg-primary/5 p-5 sm:p-6">
+        <Card data-tour="priority-hero" className="border-primary/25 bg-primary/5 p-5 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl orion-gradient text-primary-foreground shrink-0">

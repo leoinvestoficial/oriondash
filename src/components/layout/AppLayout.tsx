@@ -68,7 +68,7 @@ const NavItem = ({
 const SectionDivider = ({ label }: { label: string }) => (
   <div className="flex items-center gap-2 px-3 pt-4 pb-1">
     <div className="flex-1 h-px bg-border/60" />
-    <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 shrink-0">
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 shrink-0">
       {label}
     </p>
   </div>
@@ -119,14 +119,21 @@ const CollapsibleProGroups = ({
             <button
               onClick={() => toggle(group)}
               className={cn(
-                "w-full flex items-center justify-between px-3 pt-3 pb-1 text-[9px] font-mono uppercase tracking-widest transition-colors",
-                hasActive ? "text-primary/70" : "text-muted-foreground/50 hover:text-muted-foreground"
+                "w-full flex items-center gap-2 px-3 pt-3.5 pb-1.5 transition-colors group/label",
+                hasActive ? "text-primary" : "text-muted-foreground/60 hover:text-muted-foreground"
               )}
             >
-              {group}
+              {/* active indicator dot */}
+              <span className={cn(
+                "w-1 h-1 rounded-full shrink-0 transition-colors",
+                hasActive ? "bg-primary" : "bg-muted-foreground/30 group-hover/label:bg-muted-foreground/50"
+              )} />
+              <span className="flex-1 text-left text-[10px] font-semibold uppercase tracking-wider">
+                {group}
+              </span>
               <ChevronDown
                 className={cn(
-                  "w-3 h-3 transition-transform duration-200",
+                  "w-3 h-3 shrink-0 transition-transform duration-200",
                   isOpen ? "rotate-0" : "-rotate-90"
                 )}
               />
@@ -215,7 +222,7 @@ const SidebarBody = ({
         <div className="px-2 pt-2 pb-1 border-t border-border/60">
           <div className="flex items-center gap-2 px-3 py-1.5">
             <div className="flex-1 h-px bg-border/40" />
-            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 shrink-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 shrink-0">
               Memória
             </p>
           </div>

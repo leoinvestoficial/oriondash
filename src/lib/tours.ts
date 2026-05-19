@@ -10,19 +10,29 @@
 import { driver, type Config } from "driver.js";
 import "driver.js/dist/driver.css";
 
+// Add/remove pulse highlight class on the spotlit element
+const onHighlightStarted = (element: Element | undefined) => {
+  if (element) element.classList.add("orion-tour-highlight");
+};
+const onDeselected = (element: Element | undefined) => {
+  if (element) element.classList.remove("orion-tour-highlight");
+};
+
 const baseConfig: Config = {
   showProgress: true,
   animate: true,
   smoothScroll: true,
   allowClose: true,
-  overlayOpacity: 0.65,
-  stagePadding: 8,
-  stageRadius: 14,
+  overlayOpacity: 0.82,
+  stagePadding: 12,
+  stageRadius: 16,
   popoverClass: "orion-driver-popover",
   progressText: "{{current}} / {{total}}",
   nextBtnText: "Próximo →",
   prevBtnText: "← Voltar",
   doneBtnText: "Começar a operar ✓",
+  onHighlightStarted,
+  onDeselected,
 };
 
 export const startOwnerTour = (onComplete: () => void) => {
@@ -54,25 +64,31 @@ export const startOwnerTour = (onComplete: () => void) => {
         },
       },
 
-      // ── 3. MetricsGrid (elemento no DOM da Central) ───────────────────
+      // ── 3. MetricsGrid ────────────────────────────────────────────────
       {
+        element: '[data-tour="metrics-grid"]',
         popover: {
           title: "Métricas na primeira dobra",
           description:
-            "A Central exibe 10 KPIs críticos: <strong>Receita atribuída, Investimento, ROAS, CAC/CPA</strong> " +
-            "na linha principal — e <strong>Conversões, CTR, CPC, Oportunidades, Aprovações e Tarefas</strong> " +
-            "na segunda linha. Cada card é clicável e leva ao módulo certo.",
+            "10 KPIs críticos em duas linhas: <strong>Receita atribuída, Investimento, ROAS, CAC/CPA</strong> " +
+            "acima — e <strong>Conversões, CTR, CPC, Oportunidades, Aprovações e Tarefas</strong> " +
+            "abaixo, compactos. Cada card é clicável e leva direto ao módulo.",
+          side: "bottom",
+          align: "start",
         },
       },
 
       // ── 4. Prioridade IA ───────────────────────────────────────────────
       {
+        element: '[data-tour="priority-hero"]',
         popover: {
           title: "Prioridade da IA",
           description:
-            "O Orion analisa seus dados e identifica a <strong>prioridade número 1</strong> para o momento: " +
-            "o que está custando mais caro, o que está travando a operação ou onde está a maior oportunidade. " +
-            "Com confiança calculada e impacto financeiro estimado.",
+            "O Orion identifica a <strong>prioridade número 1</strong> agora: " +
+            "o que custa mais, trava a operação ou representa maior oportunidade. " +
+            "Com confiança calculada, impacto financeiro estimado e ação recomendada.",
+          side: "bottom",
+          align: "start",
         },
       },
 
